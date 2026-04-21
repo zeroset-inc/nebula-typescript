@@ -25,7 +25,7 @@ export default tseslint.config(
         {
           patterns: [
             {
-              regex: '^nebula(/.*)?',
+              regex: '^nebula-typescript(/.*)?',
               message: 'Use a relative import, not a package import.',
             },
           ],
