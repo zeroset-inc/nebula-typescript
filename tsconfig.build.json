@@ -5,8 +5,8 @@
   "compilerOptions": {
     "rootDir": "./dist/src",
     "paths": {
-      "nebula/*": ["./dist/src/*"],
-      "nebula": ["./dist/src/index.ts"]
+      "nebula-typescript/*": ["./dist/src/*"],
+      "nebula-typescript": ["./dist/src/index.ts"]
     },
     "noEmit": false,
     "declaration": true,

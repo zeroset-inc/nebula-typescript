@@ -1,6 +1,6 @@
 // File generated from our OpenAPI spec by Stainless. See CONTRIBUTING.md for details.
 
-import Nebula from 'nebula';
+import Nebula from 'nebula-typescript';
 
 const client = new Nebula({
   apiKey: 'My API Key',

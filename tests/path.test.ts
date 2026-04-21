@@ -1,4 +1,4 @@
-import { createPathTagFunction, encodeURIPath } from 'nebula/internal/utils/path';
+import { createPathTagFunction, encodeURIPath } from 'nebula-typescript/internal/utils/path';
 import { inspect } from 'node:util';
 import { runInNewContext } from 'node:vm';
 

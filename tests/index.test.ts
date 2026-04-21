@@ -1,10 +1,10 @@
 // File generated from our OpenAPI spec by Stainless. See CONTRIBUTING.md for details.
 
-import { APIPromise } from 'nebula/core/api-promise';
+import { APIPromise } from 'nebula-typescript/core/api-promise';
 
 import util from 'node:util';
-import Nebula from 'nebula';
-import { APIUserAbortError } from 'nebula';
+import Nebula from 'nebula-typescript';
+import { APIUserAbortError } from 'nebula-typescript';
 const defaultFetch = fetch;
 
 describe('instantiate client', () => {
