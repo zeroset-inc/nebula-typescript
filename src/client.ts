@@ -16,186 +16,80 @@ import { VERSION } from './version';
 import * as Errors from './core/error';
 import * as Uploads from './core/uploads';
 import * as API from './resources/index';
+import * as TopLevelAPI from './resources/top-level';
+import { HealthResponse } from './resources/top-level';
 import { APIPromise } from './core/api-promise';
 import {
-  Billing,
-  BillingCreateBillingPortalSessionParams,
-  BillingCreateBillingPortalSessionResponse,
-  BillingCreateCheckoutSessionParams,
-  BillingCreateCheckoutSessionResponse,
-  BillingHandleWebhookResponse,
-} from './resources/billing';
-import {
-  ChunkListParams,
-  ChunkResponse,
-  ChunkSearchParams,
-  ChunkSearchResponse,
-  ChunkSearchResult,
-  ChunkUpdateParams,
-  Chunks,
-  NebulaResultsChunkResponse,
-  NebulaResultsGenericBooleanResponse,
-  PaginatedNebulaResultListChunkResponse,
-  SearchSettings,
-} from './resources/chunks';
-import {
-  ContradictionCascadeInvalidationParams,
-  ContradictionCascadeInvalidationResponse,
-  Contradictions,
-} from './resources/contradictions';
-import {
-  EngramRetrieveDuplicateStatsParams,
-  EngramRetrieveDuplicateStatsResponse,
-  Engrams,
-} from './resources/engrams';
-import {
-  Entities,
-  EntityResolveDuplicateParams,
-  EntityResolveDuplicateResponse,
-  EntityRetrieveDuplicatesParams,
-  EntityRetrieveDuplicatesResponse,
-} from './resources/entities';
-import { Health } from './resources/health';
-import { Management, ManagementSyncSubscriptionResponse } from './resources/management';
-import { PlanListResponse, Plans } from './resources/plans';
-import {
-  PromptCreateParams,
-  PromptListResponse,
-  PromptResponse,
-  PromptRetrieveParams,
-  PromptRetrieveResponse,
-  PromptUpdateParams,
-  Prompts,
-} from './resources/prompts';
-import {
-  GenerationConfig,
-  Message,
-  Retrieval,
-  RetrievalEngageAgentParams,
-  RetrievalEngageAgentResponse,
-  RetrievalExecuteRagQueryParams,
-  RetrievalExecuteRagQueryResponse,
-  RetrievalGenerateCompletionsParams,
-  RetrievalGenerateCompletionsResponse,
-  RetrievalGenerateEmbeddingsParams,
-  RetrievalGenerateEmbeddingsResponse,
-  RetrievalSearchParams,
-  RetrievalSearchResponse,
-  WebPageSearchResult,
-} from './resources/retrieval';
-import { System, SystemRetrieveSettingsResponse, SystemRetrieveStatusResponse } from './resources/system';
-import {
-  TemporalEventListParams,
-  TemporalEventListResponse,
-  TemporalEventRetrieveResponse,
-  TemporalEvents,
-} from './resources/temporal-events';
-import { GetStatusResponse } from './resources/top-level';
-import { Version, VersionRetrieveResponse } from './resources/version';
-import {
-  WebhookGetStatsResponse,
-  WebhookListEventsParams,
-  WebhookListEventsResponse,
-  WebhookScheduleCleanupParams,
-  WebhookScheduleCleanupResponse,
-  WebhookTriggerCleanupParams,
-  WebhookTriggerCleanupResponse,
-  Webhooks,
-} from './resources/webhooks';
-import { Analytics } from './resources/analytics/analytics';
-import {
   CollectionCreateParams,
-  CollectionExportParams,
-  CollectionExportResponse,
-  CollectionExtractParams,
-  CollectionGetDocumentsWithMemoriesParams,
-  CollectionGetDocumentsWithMemoriesResponse,
-  CollectionGetMetricsParams,
-  CollectionGetMetricsResponse,
+  CollectionCreateResponse,
+  CollectionDeleteResponse,
   CollectionListParams,
-  CollectionResponse,
+  CollectionListResponse,
   CollectionRetrieveByNameParams,
+  CollectionRetrieveByNameResponse,
+  CollectionRetrieveResponse,
   CollectionUpdateParams,
-  CollectionValidateStatusParams,
-  CollectionValidateStatusResponse,
+  CollectionUpdateResponse,
   Collections,
-  GraphCreationSettings,
-  NebulaResultsCollectionResponse,
-  PaginatedNebulaResultListCollectionResponse,
-} from './resources/collections/collections';
+} from './resources/collections';
 import {
-  GraphListParams,
-  GraphListResponse,
-  GraphResponse,
-  GraphUpdateParams,
-  Graphs,
-  NebulaResultsGraphResponse,
-} from './resources/graphs/graphs';
-import { Marketplace } from './resources/marketplace/marketplace';
+  ConnectorConnectParams,
+  ConnectorConnectResponse,
+  ConnectorDisconnectParams,
+  ConnectorDisconnectResponse,
+  ConnectorListChannelsResponse,
+  ConnectorListContentsParams,
+  ConnectorListContentsResponse,
+  ConnectorListFoldersParams,
+  ConnectorListFoldersResponse,
+  ConnectorListParams,
+  ConnectorListProvidersResponse,
+  ConnectorListResponse,
+  ConnectorRetrieveResponse,
+  ConnectorSyncResponse,
+  ConnectorUpdateConfigParams,
+  ConnectorUpdateConfigResponse,
+  Connectors,
+} from './resources/connectors';
 import {
-  IngestionConfig,
-  IngestionMode,
   Memories,
   MemoryAppendParams,
   MemoryAppendResponse,
   MemoryCreateParams,
   MemoryCreateResponse,
-  MemoryDeduplicateEntitiesParams,
-  MemoryDeleteByFilterParams,
-  MemoryDeleteMultipleParams,
-  MemoryDeleteMultipleResponse,
-  MemoryDownloadZipParams,
-  MemoryExportParams,
-  MemoryExportResponse,
-  MemoryExtractEntitiesParams,
-  MemoryListChunksParams,
-  MemoryListCollectionsParams,
+  MemoryCreateUploadParams,
+  MemoryCreateUploadResponse,
+  MemoryDeleteManyParams,
+  MemoryDeleteManyResponse,
+  MemoryDeleteResponse,
+  MemoryDeleteUploadParams,
+  MemoryDeleteUploadResponse,
   MemoryListParams,
+  MemoryListResponse,
+  MemoryRetrieveResponse,
   MemorySearchParams,
   MemorySearchResponse,
   MemoryUpdateParams,
-  SearchMode,
-} from './resources/memories/memories';
+  MemoryUpdateResponse,
+} from './resources/memories';
 import {
-  SecretInitializeParams,
-  SecretInitializeResponse,
-  SecretRetrieveHistoryParams,
-  SecretRetrieveHistoryResponse,
-  SecretRetrieveStatusParams,
-  SecretRetrieveStatusResponse,
-  SecretRotateParams,
-  SecretRotateResponse,
-  SecretUpdateConfigParams,
-  SecretUpdateConfigResponse,
-  Secrets,
-} from './resources/secrets/secrets';
-import { Usage, UsageRetrieveResponse } from './resources/usage/usage';
+  SnapshotExportParams,
+  SnapshotExportResponse,
+  SnapshotImportParams,
+  SnapshotImportResponse,
+  Snapshots,
+} from './resources/snapshots';
 import {
-  NebulaResultsUser,
-  StandardUser,
-  StorageTypeLimit,
-  SystemDefaults,
-  Token,
-  TokenResponse,
-  UsageLimit,
-  UserChangePasswordParams,
-  UserDeleteParams,
-  UserExportParams,
-  UserExportResponse,
-  UserFetchLimitsResponse,
-  UserListParams,
-  UserLoginParams,
-  UserRefreshTokenParams,
-  UserRegisterParams,
-  UserRequestPasswordResetParams,
-  UserResetPasswordParams,
-  UserRetrieveMetricsParams,
-  UserRetrieveMetricsResponse,
-  UserSendVerificationEmailParams,
-  UserUpdateParams,
-  UserVerifyEmailParams,
-  Users,
-} from './resources/users/users';
+  SourceDeleteParams,
+  SourceDeleteResponse,
+  SourceListParams,
+  SourceListResponse,
+  SourceSearchParams,
+  SourceSearchResponse,
+  SourceUpdateParams,
+  SourceUpdateResponse,
+  Sources,
+} from './resources/sources';
 import { type Fetch } from './internal/builtin-types';
 import { HeadersLike, NullableHeaders, buildHeaders } from './internal/headers';
 import { FinalRequestOptions, RequestOptions } from './internal/request-options';
@@ -211,14 +105,14 @@ import { isEmptyObj } from './internal/utils/values';
 
 export interface ClientOptions {
   /**
-   * Defaults to process.env['NEBULA_BEARER_TOKEN'].
-   */
-  bearerToken?: string | null | undefined;
-
-  /**
    * Defaults to process.env['NEBULA_API_KEY'].
    */
   apiKey?: string | null | undefined;
+
+  /**
+   * Defaults to process.env['NEBULA_BEARER_TOKEN'].
+   */
+  accessToken?: string | null | undefined;
 
   /**
    * Override the default base URL for the API, e.g., "https://api.example.com/v2/"
@@ -293,8 +187,8 @@ export interface ClientOptions {
  * API Client for interfacing with the Nebula API.
  */
 export class Nebula {
-  bearerToken: string | null;
   apiKey: string | null;
+  accessToken: string | null;
 
   baseURL: string;
   maxRetries: number;
@@ -311,9 +205,9 @@ export class Nebula {
   /**
    * API Client for interfacing with the Nebula API.
    *
-   * @param {string | null | undefined} [opts.bearerToken=process.env['NEBULA_BEARER_TOKEN'] ?? null]
    * @param {string | null | undefined} [opts.apiKey=process.env['NEBULA_API_KEY'] ?? null]
-   * @param {string} [opts.baseURL=process.env['NEBULA_BASE_URL'] ?? https://api.example.com] - Override the default base URL for the API.
+   * @param {string | null | undefined} [opts.accessToken=process.env['NEBULA_BEARER_TOKEN'] ?? null]
+   * @param {string} [opts.baseURL=process.env['NEBULA_BASE_URL'] ?? https://api.trynebula.ai] - Override the default base URL for the API.
    * @param {number} [opts.timeout=1 minute] - The maximum amount of time (in milliseconds) the client will wait for a response before timing out.
    * @param {MergedRequestInit} [opts.fetchOptions] - Additional `RequestInit` options to be passed to `fetch` calls.
    * @param {Fetch} [opts.fetch] - Specify a custom `fetch` function implementation.
@@ -323,15 +217,15 @@ export class Nebula {
    */
   constructor({
     baseURL = readEnv('NEBULA_BASE_URL'),
-    bearerToken = readEnv('NEBULA_BEARER_TOKEN') ?? null,
     apiKey = readEnv('NEBULA_API_KEY') ?? null,
+    accessToken = readEnv('NEBULA_BEARER_TOKEN') ?? null,
     ...opts
   }: ClientOptions = {}) {
     const options: ClientOptions = {
-      bearerToken,
       apiKey,
+      accessToken,
       ...opts,
-      baseURL: baseURL || `https://api.example.com`,
+      baseURL: baseURL || `https://api.trynebula.ai`,
     };
 
     this.baseURL = options.baseURL!;
@@ -351,8 +245,8 @@ export class Nebula {
 
     this._options = options;
 
-    this.bearerToken = bearerToken;
     this.apiKey = apiKey;
+    this.accessToken = accessToken;
   }
 
   /**
@@ -368,8 +262,8 @@ export class Nebula {
       logLevel: this.logLevel,
       fetch: this.fetch,
       fetchOptions: this.fetchOptions,
-      bearerToken: this.bearerToken,
       apiKey: this.apiKey,
+      accessToken: this.accessToken,
       ...options,
     });
     return client;
@@ -379,14 +273,14 @@ export class Nebula {
    * Check whether the base URL is set to its default.
    */
   #baseURLOverridden(): boolean {
-    return this.baseURL !== 'https://api.example.com';
+    return this.baseURL !== 'https://api.trynebula.ai';
   }
 
   /**
-   * Root endpoint - API status and welcome message.
+   * Health Check
    */
-  getStatus(options?: RequestOptions): APIPromise<unknown> {
-    return this.get('/', options);
+  health(options?: RequestOptions): APIPromise<TopLevelAPI.HealthResponse> {
+    return this.get('/v1/health', { ...options, __security: {} });
   }
 
   protected defaultQuery(): Record<string, string | undefined> | undefined {
@@ -394,13 +288,6 @@ export class Nebula {
   }
 
   protected validateHeaders({ values, nulls }: NullableHeaders) {
-    if (this.bearerToken && values.get('authorization')) {
-      return;
-    }
-    if (nulls.has('authorization')) {
-      return;
-    }
-
     if (this.apiKey && values.get('x-api-key')) {
       return;
     }
@@ -408,20 +295,26 @@ export class Nebula {
       return;
     }
 
+    if (this.accessToken && values.get('authorization')) {
+      return;
+    }
+    if (nulls.has('authorization')) {
+      return;
+    }
+
     throw new Error(
-      'Could not resolve authentication method. Expected either bearerToken or apiKey to be set. Or for one of the "Authorization" or "X-API-Key" headers to be explicitly omitted',
+      'Could not resolve authentication method. Expected either apiKey or accessToken to be set. Or for one of the "X-API-Key" or "Authorization" headers to be explicitly omitted',
     );
   }
 
-  protected async authHeaders(opts: FinalRequestOptions): Promise<NullableHeaders | undefined> {
-    return buildHeaders([await this.httpBearerAuth(opts), await this.apiKeyHeaderAuth(opts)]);
-  }
-
-  protected async httpBearerAuth(opts: FinalRequestOptions): Promise<NullableHeaders | undefined> {
-    if (this.bearerToken == null) {
-      return undefined;
-    }
-    return buildHeaders([{ Authorization: `Bearer ${this.bearerToken}` }]);
+  protected async authHeaders(
+    opts: FinalRequestOptions,
+    schemes: { apiKeyHeaderAuth?: boolean; httpBearerAuth?: boolean },
+  ): Promise<NullableHeaders | undefined> {
+    return buildHeaders([
+      schemes.apiKeyHeaderAuth ? await this.apiKeyHeaderAuth(opts) : null,
+      schemes.httpBearerAuth ? await this.httpBearerAuth(opts) : null,
+    ]);
   }
 
   protected async apiKeyHeaderAuth(opts: FinalRequestOptions): Promise<NullableHeaders | undefined> {
@@ -429,6 +322,13 @@ export class Nebula {
       return undefined;
     }
     return buildHeaders([{ 'X-API-Key': this.apiKey }]);
+  }
+
+  protected async httpBearerAuth(opts: FinalRequestOptions): Promise<NullableHeaders | undefined> {
+    if (this.accessToken == null) {
+      return undefined;
+    }
+    return buildHeaders([{ Authorization: `Bearer ${this.accessToken}` }]);
   }
 
   protected stringifyQuery(query: object | Record<string, unknown>): string {
@@ -854,7 +754,7 @@ export class Nebula {
         ...(options.timeout ? { 'X-Stainless-Timeout': String(Math.trunc(options.timeout / 1000)) } : {}),
         ...getPlatformHeaders(),
       },
-      await this.authHeaders(options),
+      await this.authHeaders(options, options.__security ?? { apiKeyHeaderAuth: true, httpBearerAuth: true }),
       this._options.defaultHeaders,
       bodyHeaders,
       options.headers,
@@ -935,262 +835,97 @@ export class Nebula {
 
   static toFile = Uploads.toFile;
 
-  chunks: API.Chunks = new API.Chunks(this);
   collections: API.Collections = new API.Collections(this);
   memories: API.Memories = new API.Memories(this);
-  graphs: API.Graphs = new API.Graphs(this);
-  entities: API.Entities = new API.Entities(this);
-  engrams: API.Engrams = new API.Engrams(this);
-  prompts: API.Prompts = new API.Prompts(this);
-  retrieval: API.Retrieval = new API.Retrieval(this);
-  marketplace: API.Marketplace = new API.Marketplace(this);
-  analytics: API.Analytics = new API.Analytics(this);
-  health: API.Health = new API.Health(this);
-  version: API.Version = new API.Version(this);
-  management: API.Management = new API.Management(this);
-  plans: API.Plans = new API.Plans(this);
-  usage: API.Usage = new API.Usage(this);
-  system: API.System = new API.System(this);
-  secrets: API.Secrets = new API.Secrets(this);
-  webhooks: API.Webhooks = new API.Webhooks(this);
-  billing: API.Billing = new API.Billing(this);
-  contradictions: API.Contradictions = new API.Contradictions(this);
-  temporalEvents: API.TemporalEvents = new API.TemporalEvents(this);
-  users: API.Users = new API.Users(this);
+  sources: API.Sources = new API.Sources(this);
+  connectors: API.Connectors = new API.Connectors(this);
+  snapshots: API.Snapshots = new API.Snapshots(this);
 }
 
-Nebula.Chunks = Chunks;
 Nebula.Collections = Collections;
 Nebula.Memories = Memories;
-Nebula.Graphs = Graphs;
-Nebula.Entities = Entities;
-Nebula.Engrams = Engrams;
-Nebula.Prompts = Prompts;
-Nebula.Retrieval = Retrieval;
-Nebula.Marketplace = Marketplace;
-Nebula.Analytics = Analytics;
-Nebula.Health = Health;
-Nebula.Version = Version;
-Nebula.Management = Management;
-Nebula.Plans = Plans;
-Nebula.Usage = Usage;
-Nebula.System = System;
-Nebula.Secrets = Secrets;
-Nebula.Webhooks = Webhooks;
-Nebula.Billing = Billing;
-Nebula.Contradictions = Contradictions;
-Nebula.TemporalEvents = TemporalEvents;
-Nebula.Users = Users;
+Nebula.Sources = Sources;
+Nebula.Connectors = Connectors;
+Nebula.Snapshots = Snapshots;
 
 export declare namespace Nebula {
   export type RequestOptions = Opts.RequestOptions;
 
-  export { type GetStatusResponse as GetStatusResponse };
-
-  export {
-    Chunks as Chunks,
-    type ChunkResponse as ChunkResponse,
-    type ChunkSearchResult as ChunkSearchResult,
-    type NebulaResultsChunkResponse as NebulaResultsChunkResponse,
-    type NebulaResultsGenericBooleanResponse as NebulaResultsGenericBooleanResponse,
-    type PaginatedNebulaResultListChunkResponse as PaginatedNebulaResultListChunkResponse,
-    type SearchSettings as SearchSettings,
-    type ChunkSearchResponse as ChunkSearchResponse,
-    type ChunkUpdateParams as ChunkUpdateParams,
-    type ChunkListParams as ChunkListParams,
-    type ChunkSearchParams as ChunkSearchParams,
-  };
+  export { type HealthResponse as HealthResponse };
 
   export {
     Collections as Collections,
-    type CollectionResponse as CollectionResponse,
-    type GraphCreationSettings as GraphCreationSettings,
-    type NebulaResultsCollectionResponse as NebulaResultsCollectionResponse,
-    type PaginatedNebulaResultListCollectionResponse as PaginatedNebulaResultListCollectionResponse,
-    type CollectionExportResponse as CollectionExportResponse,
-    type CollectionGetDocumentsWithMemoriesResponse as CollectionGetDocumentsWithMemoriesResponse,
-    type CollectionGetMetricsResponse as CollectionGetMetricsResponse,
-    type CollectionValidateStatusResponse as CollectionValidateStatusResponse,
+    type CollectionCreateResponse as CollectionCreateResponse,
+    type CollectionRetrieveResponse as CollectionRetrieveResponse,
+    type CollectionUpdateResponse as CollectionUpdateResponse,
+    type CollectionListResponse as CollectionListResponse,
+    type CollectionDeleteResponse as CollectionDeleteResponse,
+    type CollectionRetrieveByNameResponse as CollectionRetrieveByNameResponse,
     type CollectionCreateParams as CollectionCreateParams,
     type CollectionUpdateParams as CollectionUpdateParams,
     type CollectionListParams as CollectionListParams,
-    type CollectionExportParams as CollectionExportParams,
-    type CollectionExtractParams as CollectionExtractParams,
-    type CollectionGetDocumentsWithMemoriesParams as CollectionGetDocumentsWithMemoriesParams,
-    type CollectionGetMetricsParams as CollectionGetMetricsParams,
     type CollectionRetrieveByNameParams as CollectionRetrieveByNameParams,
-    type CollectionValidateStatusParams as CollectionValidateStatusParams,
   };
 
   export {
     Memories as Memories,
-    type IngestionConfig as IngestionConfig,
-    type IngestionMode as IngestionMode,
-    type SearchMode as SearchMode,
     type MemoryCreateResponse as MemoryCreateResponse,
+    type MemoryRetrieveResponse as MemoryRetrieveResponse,
+    type MemoryUpdateResponse as MemoryUpdateResponse,
+    type MemoryListResponse as MemoryListResponse,
+    type MemoryDeleteResponse as MemoryDeleteResponse,
     type MemoryAppendResponse as MemoryAppendResponse,
-    type MemoryDeleteMultipleResponse as MemoryDeleteMultipleResponse,
-    type MemoryExportResponse as MemoryExportResponse,
+    type MemoryCreateUploadResponse as MemoryCreateUploadResponse,
+    type MemoryDeleteManyResponse as MemoryDeleteManyResponse,
+    type MemoryDeleteUploadResponse as MemoryDeleteUploadResponse,
     type MemorySearchResponse as MemorySearchResponse,
     type MemoryCreateParams as MemoryCreateParams,
     type MemoryUpdateParams as MemoryUpdateParams,
     type MemoryListParams as MemoryListParams,
     type MemoryAppendParams as MemoryAppendParams,
-    type MemoryDeduplicateEntitiesParams as MemoryDeduplicateEntitiesParams,
-    type MemoryDeleteByFilterParams as MemoryDeleteByFilterParams,
-    type MemoryDeleteMultipleParams as MemoryDeleteMultipleParams,
-    type MemoryDownloadZipParams as MemoryDownloadZipParams,
-    type MemoryExportParams as MemoryExportParams,
-    type MemoryExtractEntitiesParams as MemoryExtractEntitiesParams,
-    type MemoryListChunksParams as MemoryListChunksParams,
-    type MemoryListCollectionsParams as MemoryListCollectionsParams,
+    type MemoryCreateUploadParams as MemoryCreateUploadParams,
+    type MemoryDeleteManyParams as MemoryDeleteManyParams,
+    type MemoryDeleteUploadParams as MemoryDeleteUploadParams,
     type MemorySearchParams as MemorySearchParams,
   };
 
   export {
-    Graphs as Graphs,
-    type GraphResponse as GraphResponse,
-    type NebulaResultsGraphResponse as NebulaResultsGraphResponse,
-    type GraphListResponse as GraphListResponse,
-    type GraphUpdateParams as GraphUpdateParams,
-    type GraphListParams as GraphListParams,
+    Sources as Sources,
+    type SourceUpdateResponse as SourceUpdateResponse,
+    type SourceListResponse as SourceListResponse,
+    type SourceDeleteResponse as SourceDeleteResponse,
+    type SourceSearchResponse as SourceSearchResponse,
+    type SourceUpdateParams as SourceUpdateParams,
+    type SourceListParams as SourceListParams,
+    type SourceDeleteParams as SourceDeleteParams,
+    type SourceSearchParams as SourceSearchParams,
   };
 
   export {
-    Entities as Entities,
-    type EntityResolveDuplicateResponse as EntityResolveDuplicateResponse,
-    type EntityRetrieveDuplicatesResponse as EntityRetrieveDuplicatesResponse,
-    type EntityResolveDuplicateParams as EntityResolveDuplicateParams,
-    type EntityRetrieveDuplicatesParams as EntityRetrieveDuplicatesParams,
+    Connectors as Connectors,
+    type ConnectorRetrieveResponse as ConnectorRetrieveResponse,
+    type ConnectorListResponse as ConnectorListResponse,
+    type ConnectorConnectResponse as ConnectorConnectResponse,
+    type ConnectorDisconnectResponse as ConnectorDisconnectResponse,
+    type ConnectorListChannelsResponse as ConnectorListChannelsResponse,
+    type ConnectorListContentsResponse as ConnectorListContentsResponse,
+    type ConnectorListFoldersResponse as ConnectorListFoldersResponse,
+    type ConnectorListProvidersResponse as ConnectorListProvidersResponse,
+    type ConnectorSyncResponse as ConnectorSyncResponse,
+    type ConnectorUpdateConfigResponse as ConnectorUpdateConfigResponse,
+    type ConnectorListParams as ConnectorListParams,
+    type ConnectorConnectParams as ConnectorConnectParams,
+    type ConnectorDisconnectParams as ConnectorDisconnectParams,
+    type ConnectorListContentsParams as ConnectorListContentsParams,
+    type ConnectorListFoldersParams as ConnectorListFoldersParams,
+    type ConnectorUpdateConfigParams as ConnectorUpdateConfigParams,
   };
 
   export {
-    Engrams as Engrams,
-    type EngramRetrieveDuplicateStatsResponse as EngramRetrieveDuplicateStatsResponse,
-    type EngramRetrieveDuplicateStatsParams as EngramRetrieveDuplicateStatsParams,
-  };
-
-  export {
-    Prompts as Prompts,
-    type PromptResponse as PromptResponse,
-    type PromptRetrieveResponse as PromptRetrieveResponse,
-    type PromptListResponse as PromptListResponse,
-    type PromptCreateParams as PromptCreateParams,
-    type PromptRetrieveParams as PromptRetrieveParams,
-    type PromptUpdateParams as PromptUpdateParams,
-  };
-
-  export {
-    Retrieval as Retrieval,
-    type GenerationConfig as GenerationConfig,
-    type Message as Message,
-    type WebPageSearchResult as WebPageSearchResult,
-    type RetrievalEngageAgentResponse as RetrievalEngageAgentResponse,
-    type RetrievalExecuteRagQueryResponse as RetrievalExecuteRagQueryResponse,
-    type RetrievalGenerateCompletionsResponse as RetrievalGenerateCompletionsResponse,
-    type RetrievalGenerateEmbeddingsResponse as RetrievalGenerateEmbeddingsResponse,
-    type RetrievalSearchResponse as RetrievalSearchResponse,
-    type RetrievalEngageAgentParams as RetrievalEngageAgentParams,
-    type RetrievalExecuteRagQueryParams as RetrievalExecuteRagQueryParams,
-    type RetrievalGenerateCompletionsParams as RetrievalGenerateCompletionsParams,
-    type RetrievalGenerateEmbeddingsParams as RetrievalGenerateEmbeddingsParams,
-    type RetrievalSearchParams as RetrievalSearchParams,
-  };
-
-  export { Marketplace as Marketplace };
-
-  export { Analytics as Analytics };
-
-  export { Health as Health };
-
-  export { Version as Version, type VersionRetrieveResponse as VersionRetrieveResponse };
-
-  export {
-    Management as Management,
-    type ManagementSyncSubscriptionResponse as ManagementSyncSubscriptionResponse,
-  };
-
-  export { Plans as Plans, type PlanListResponse as PlanListResponse };
-
-  export { Usage as Usage, type UsageRetrieveResponse as UsageRetrieveResponse };
-
-  export {
-    System as System,
-    type SystemRetrieveSettingsResponse as SystemRetrieveSettingsResponse,
-    type SystemRetrieveStatusResponse as SystemRetrieveStatusResponse,
-  };
-
-  export {
-    Secrets as Secrets,
-    type SecretInitializeResponse as SecretInitializeResponse,
-    type SecretRetrieveHistoryResponse as SecretRetrieveHistoryResponse,
-    type SecretRetrieveStatusResponse as SecretRetrieveStatusResponse,
-    type SecretRotateResponse as SecretRotateResponse,
-    type SecretUpdateConfigResponse as SecretUpdateConfigResponse,
-    type SecretInitializeParams as SecretInitializeParams,
-    type SecretRetrieveHistoryParams as SecretRetrieveHistoryParams,
-    type SecretRetrieveStatusParams as SecretRetrieveStatusParams,
-    type SecretRotateParams as SecretRotateParams,
-    type SecretUpdateConfigParams as SecretUpdateConfigParams,
-  };
-
-  export {
-    Webhooks as Webhooks,
-    type WebhookGetStatsResponse as WebhookGetStatsResponse,
-    type WebhookListEventsResponse as WebhookListEventsResponse,
-    type WebhookScheduleCleanupResponse as WebhookScheduleCleanupResponse,
-    type WebhookTriggerCleanupResponse as WebhookTriggerCleanupResponse,
-    type WebhookListEventsParams as WebhookListEventsParams,
-    type WebhookScheduleCleanupParams as WebhookScheduleCleanupParams,
-    type WebhookTriggerCleanupParams as WebhookTriggerCleanupParams,
-  };
-
-  export {
-    Billing as Billing,
-    type BillingCreateBillingPortalSessionResponse as BillingCreateBillingPortalSessionResponse,
-    type BillingCreateCheckoutSessionResponse as BillingCreateCheckoutSessionResponse,
-    type BillingHandleWebhookResponse as BillingHandleWebhookResponse,
-    type BillingCreateBillingPortalSessionParams as BillingCreateBillingPortalSessionParams,
-    type BillingCreateCheckoutSessionParams as BillingCreateCheckoutSessionParams,
-  };
-
-  export {
-    Contradictions as Contradictions,
-    type ContradictionCascadeInvalidationResponse as ContradictionCascadeInvalidationResponse,
-    type ContradictionCascadeInvalidationParams as ContradictionCascadeInvalidationParams,
-  };
-
-  export {
-    TemporalEvents as TemporalEvents,
-    type TemporalEventRetrieveResponse as TemporalEventRetrieveResponse,
-    type TemporalEventListResponse as TemporalEventListResponse,
-    type TemporalEventListParams as TemporalEventListParams,
-  };
-
-  export {
-    Users as Users,
-    type NebulaResultsUser as NebulaResultsUser,
-    type StandardUser as StandardUser,
-    type StorageTypeLimit as StorageTypeLimit,
-    type SystemDefaults as SystemDefaults,
-    type Token as Token,
-    type TokenResponse as TokenResponse,
-    type UsageLimit as UsageLimit,
-    type UserExportResponse as UserExportResponse,
-    type UserFetchLimitsResponse as UserFetchLimitsResponse,
-    type UserRetrieveMetricsResponse as UserRetrieveMetricsResponse,
-    type UserUpdateParams as UserUpdateParams,
-    type UserListParams as UserListParams,
-    type UserDeleteParams as UserDeleteParams,
-    type UserChangePasswordParams as UserChangePasswordParams,
-    type UserExportParams as UserExportParams,
-    type UserLoginParams as UserLoginParams,
-    type UserRefreshTokenParams as UserRefreshTokenParams,
-    type UserRegisterParams as UserRegisterParams,
-    type UserRequestPasswordResetParams as UserRequestPasswordResetParams,
-    type UserResetPasswordParams as UserResetPasswordParams,
-    type UserRetrieveMetricsParams as UserRetrieveMetricsParams,
-    type UserSendVerificationEmailParams as UserSendVerificationEmailParams,
-    type UserVerifyEmailParams as UserVerifyEmailParams,
+    Snapshots as Snapshots,
+    type SnapshotExportResponse as SnapshotExportResponse,
+    type SnapshotImportResponse as SnapshotImportResponse,
+    type SnapshotExportParams as SnapshotExportParams,
+    type SnapshotImportParams as SnapshotImportParams,
   };
 }
