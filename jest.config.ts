@@ -7,8 +7,8 @@ const config: JestConfigWithTsJest = {
     '^.+\\.(t|j)sx?$': ['@swc/jest', { sourceMaps: 'inline' }],
   },
   moduleNameMapper: {
-    '^nebula-typescript$': '<rootDir>/src/index.ts',
-    '^nebula-typescript/(.*)$': '<rootDir>/src/$1',
+    '^@nebula-ai/sdk$': '<rootDir>/src/index.ts',
+    '^@nebula-ai/sdk/(.*)$': '<rootDir>/src/$1',
   },
   modulePathIgnorePatterns: [
     '<rootDir>/ecosystem-tests/',

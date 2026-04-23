@@ -1,6 +1,6 @@
 // File generated from our OpenAPI spec by Stainless. See CONTRIBUTING.md for details.
 
-import { stringifyQuery } from 'nebula-typescript/internal/utils/query';
+import { stringifyQuery } from '@nebula-ai/sdk/internal/utils/query';
 
 describe(stringifyQuery, () => {
   for (const [input, expected] of [
