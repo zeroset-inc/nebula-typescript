@@ -1,6 +1,6 @@
 {
   "name": "nebula-typescript",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "The official TypeScript library for the Nebula API",
   "author": "Nebula <>",
   "types": "dist/index.d.ts",
