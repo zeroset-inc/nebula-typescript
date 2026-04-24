@@ -21,3 +21,16 @@ export {
   PermissionDeniedError,
   UnprocessableEntityError,
 } from './core/error';
+export {
+  APIError as NebulaException,
+  APIConnectionError as NebulaClientException,
+  AuthenticationError as NebulaAuthenticationException,
+  RateLimitError as NebulaRateLimitException,
+  BadRequestError as NebulaValidationException,
+  NotFoundError as NebulaNotFoundException,
+} from './core/error';
+export * from './resources/collections';
+export * from './resources/connectors';
+export * from './resources/memories';
+export * from './resources/snapshots';
+export * from './resources/top-level';
