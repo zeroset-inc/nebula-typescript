@@ -58,6 +58,7 @@ describe('resource memories', () => {
     await expect(
       client.memories.list(
         {
+          chunks_limit: 0,
           collection_ids: ['string', 'string'],
           ids: ['string'],
           include_summary_embeddings: true,
