@@ -98,7 +98,7 @@ describe('resource memories', () => {
   test('append: required and optional params', async () => {
     const response = await client.memories.append('182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e', {
       collection_id: '182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e',
-      chunks: ['S0'],
+      chunks: ['string'],
       ingestion_config: {
         audio_transcription_model: 'audio_transcription_model',
         automatic_extraction: true,
@@ -129,7 +129,7 @@ describe('resource memories', () => {
       ingestion_mode: 'hi-res',
       messages: [
         {
-          content: 'S0',
+          content: 'string',
           role: 'user',
           authority: 0,
           metadata: { foo: 'bar' },
