@@ -742,21 +742,19 @@ export namespace MemoryDeleteResponse {
 }
 
 export type MemoryAppendResponse =
-  | MemoryAppendResponse.NebulaResultsAppendMemoryResponse
+  | MemoryAppendResponse.NebulaResultsMessageResponse
   | MemoryAppendResponse.NebulaResultsIngestionResponse;
 
 export namespace MemoryAppendResponse {
-  export interface NebulaResultsAppendMemoryResponse {
-    results: NebulaResultsAppendMemoryResponse.Results;
+  export interface NebulaResultsMessageResponse {
+    results: NebulaResultsMessageResponse.Results;
   }
 
-  export namespace NebulaResultsAppendMemoryResponse {
+  export namespace NebulaResultsMessageResponse {
     export interface Results {
       id: string;
 
       message: Results.Message;
-
-      appended_messages?: Array<Results.AppendedMessage>;
 
       metadata?: { [key: string]: unknown };
     }
@@ -782,12 +780,6 @@ export namespace MemoryAppendResponse {
         tool_call_id?: string | null;
 
         tool_calls?: Array<{ [key: string]: unknown }> | null;
-      }
-
-      export interface AppendedMessage {
-        message_id: string;
-
-        chunk_ids?: Array<string>;
       }
     }
   }
@@ -1825,6 +1817,12 @@ export interface MemoryUpdateParams {
 }
 
 export interface MemoryListParams {
+  /**
+   * Maximum chunks to inline per engram. Defaults to all chunks for backwards
+   * compatibility; pass 0 to skip chunk hydration.
+   */
+  chunks_limit?: number | null;
+
   /**
    * Optional list of collection IDs to filter engrams by. If provided, exactly one
    * collection ID must be specified.
