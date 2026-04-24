@@ -268,6 +268,104 @@ describe('instantiate client', () => {
     });
   });
 
+  test('storeMemory returns snapshot results for snapshot-mode writes', async () => {
+    const client = new Nebula({
+      apiKey: 'My API Key',
+      accessToken: 'My Access Token',
+    });
+    const snapshot = { collection_id: 'collection-123', root_hash: 'root-123' };
+    jest.spyOn(client.memories, 'create').mockResolvedValue({ results: { snapshot } } as never);
+
+    await expect(client.storeMemory({ snapshot, content: 'remember this' })).resolves.toEqual({ snapshot });
+  });
+
+  test('storeMemory extracts ids for standard memory writes', async () => {
+    const client = new Nebula({
+      apiKey: 'My API Key',
+      accessToken: 'My Access Token',
+    });
+    jest
+      .spyOn(client.memories, 'create')
+      .mockResolvedValue({ results: { memory_id: 'memory-123' } } as never);
+
+    await expect(
+      client.storeMemory({ collection_id: 'collection-123', content: 'remember this' }),
+    ).resolves.toBe('memory-123');
+  });
+
+  test('storeMemory appends when memory_id is provided', async () => {
+    const client = new Nebula({
+      apiKey: 'My API Key',
+      accessToken: 'My Access Token',
+    });
+    const append = jest
+      .spyOn(client.memories, 'append')
+      .mockResolvedValue({ results: { success: true } } as never);
+
+    await expect(
+      client.storeMemory({
+        collection_id: 'collection-123',
+        memory_id: 'memory-123',
+        content: 'additional context',
+      }),
+    ).resolves.toBe('memory-123');
+    expect(append).toHaveBeenCalledWith(
+      'memory-123',
+      expect.objectContaining({
+        collection_id: 'collection-123',
+        raw_text: 'additional context',
+      }),
+      undefined,
+    );
+  });
+
+  test('storeMemory append path preserves camelCase collectionId alias', async () => {
+    const client = new Nebula({
+      apiKey: 'My API Key',
+      accessToken: 'My Access Token',
+    });
+    const append = jest
+      .spyOn(client.memories, 'append')
+      .mockResolvedValue({ results: { success: true } } as never);
+
+    await expect(
+      client.storeMemory({
+        collectionId: 'collection-123',
+        memory_id: 'memory-123',
+        content: 'additional context',
+      }),
+    ).resolves.toBe('memory-123');
+    expect(append).toHaveBeenCalledWith(
+      'memory-123',
+      expect.objectContaining({
+        collection_id: 'collection-123',
+        raw_text: 'additional context',
+      }),
+      undefined,
+    );
+  });
+
+  test('legacy delete memory alias keeps APIPromise helpers', async () => {
+    let capturedURL = '';
+    const client = new Nebula({
+      baseURL: 'http://localhost:5000/',
+      apiKey: 'My API Key',
+      accessToken: 'My Access Token',
+      fetch: async (url) => {
+        capturedURL = String(url);
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { 'Content-Type': 'application/json' },
+        });
+      },
+    });
+
+    const responsePromise = client.delete('memory-123');
+    expect(responsePromise).toBeInstanceOf(APIPromise);
+    await expect(responsePromise.asResponse()).resolves.toBeInstanceOf(Response);
+    await expect(responsePromise).resolves.toBe(true);
+    expect(capturedURL).toBe('http://localhost:5000/v1/memories/memory-123');
+  });
+
   test('custom signal', async () => {
     const client = new Nebula({
       baseURL: process.env['TEST_API_BASE_URL'] ?? 'http://127.0.0.1:4010',
@@ -498,6 +596,18 @@ describe('instantiate client', () => {
     const client = new Nebula({ apiKey: 'My API Key', accessToken: 'My Access Token' });
     expect(client.apiKey).toBe('My API Key');
     expect(client.accessToken).toBe('My Access Token');
+  });
+
+  test('explicit null client options suppress environment variables', () => {
+    process.env['NEBULA_API_KEY'] = 'env API Key';
+    process.env['NEBULA_BEARER_TOKEN'] = 'env Access Token';
+    process.env['NEBULA_BASE_URL'] = 'https://example.com/from_env';
+
+    const client = new Nebula({ apiKey: null, accessToken: null, baseURL: null });
+
+    expect(client.apiKey).toBeNull();
+    expect(client.accessToken).toBeNull();
+    expect(client.baseURL).toEqual('https://api.trynebula.ai');
   });
 });
 
