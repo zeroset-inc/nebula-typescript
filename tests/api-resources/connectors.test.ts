@@ -77,61 +77,6 @@ describe('resource connectors', () => {
     ).rejects.toThrow(Nebula.NotFoundError);
   });
 
-  test('listChannels', async () => {
-    const responsePromise = client.connectors.listChannels('182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e');
-    const rawResponse = await responsePromise.asResponse();
-    expect(rawResponse).toBeInstanceOf(Response);
-    const response = await responsePromise;
-    expect(response).not.toBeInstanceOf(Response);
-    const dataAndResponse = await responsePromise.withResponse();
-    expect(dataAndResponse.data).toBe(response);
-    expect(dataAndResponse.response).toBe(rawResponse);
-  });
-
-  test('listContents', async () => {
-    const responsePromise = client.connectors.listContents('182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e');
-    const rawResponse = await responsePromise.asResponse();
-    expect(rawResponse).toBeInstanceOf(Response);
-    const response = await responsePromise;
-    expect(response).not.toBeInstanceOf(Response);
-    const dataAndResponse = await responsePromise.withResponse();
-    expect(dataAndResponse.data).toBe(response);
-    expect(dataAndResponse.response).toBe(rawResponse);
-  });
-
-  test('listContents: request options and params are passed correctly', async () => {
-    // ensure the request options are being passed correctly by passing an invalid HTTP method in order to cause an error
-    await expect(
-      client.connectors.listContents(
-        '182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e',
-        { parent_id: 'parent_id' },
-        { path: '/_stainless_unknown_path' },
-      ),
-    ).rejects.toThrow(Nebula.NotFoundError);
-  });
-
-  test('listFolders', async () => {
-    const responsePromise = client.connectors.listFolders('182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e');
-    const rawResponse = await responsePromise.asResponse();
-    expect(rawResponse).toBeInstanceOf(Response);
-    const response = await responsePromise;
-    expect(response).not.toBeInstanceOf(Response);
-    const dataAndResponse = await responsePromise.withResponse();
-    expect(dataAndResponse.data).toBe(response);
-    expect(dataAndResponse.response).toBe(rawResponse);
-  });
-
-  test('listFolders: request options and params are passed correctly', async () => {
-    // ensure the request options are being passed correctly by passing an invalid HTTP method in order to cause an error
-    await expect(
-      client.connectors.listFolders(
-        '182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e',
-        { parent_id: 'parent_id' },
-        { path: '/_stainless_unknown_path' },
-      ),
-    ).rejects.toThrow(Nebula.NotFoundError);
-  });
-
   test('listProviders', async () => {
     const responsePromise = client.connectors.listProviders();
     const rawResponse = await responsePromise.asResponse();
@@ -152,25 +97,5 @@ describe('resource connectors', () => {
     const dataAndResponse = await responsePromise.withResponse();
     expect(dataAndResponse.data).toBe(response);
     expect(dataAndResponse.response).toBe(rawResponse);
-  });
-
-  test('updateConfig: only required params', async () => {
-    const responsePromise = client.connectors.updateConfig('182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e', {
-      config: { foo: 'bar' },
-    });
-    const rawResponse = await responsePromise.asResponse();
-    expect(rawResponse).toBeInstanceOf(Response);
-    const response = await responsePromise;
-    expect(response).not.toBeInstanceOf(Response);
-    const dataAndResponse = await responsePromise.withResponse();
-    expect(dataAndResponse.data).toBe(response);
-    expect(dataAndResponse.response).toBe(rawResponse);
-  });
-
-  test('updateConfig: required and optional params', async () => {
-    const response = await client.connectors.updateConfig('182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e', {
-      config: { foo: 'bar' },
-      apply: 'full_resync',
-    });
   });
 });

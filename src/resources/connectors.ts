@@ -47,35 +47,6 @@ export class Connectors extends APIResource {
   }
 
   /**
-   * List Slack channels for a connection
-   */
-  listChannels(connectionID: string, options?: RequestOptions): APIPromise<ConnectorListChannelsResponse> {
-    return this._client.get(path`/v1/connectors/${connectionID}/channels`, options);
-  }
-
-  /**
-   * Browse Google Drive folders and files for a connection
-   */
-  listContents(
-    connectionID: string,
-    query: ConnectorListContentsParams | null | undefined = {},
-    options?: RequestOptions,
-  ): APIPromise<ConnectorListContentsResponse> {
-    return this._client.get(path`/v1/connectors/${connectionID}/contents`, { query, ...options });
-  }
-
-  /**
-   * Browse Google Drive folders for a connection
-   */
-  listFolders(
-    connectionID: string,
-    query: ConnectorListFoldersParams | null | undefined = {},
-    options?: RequestOptions,
-  ): APIPromise<ConnectorListFoldersResponse> {
-    return this._client.get(path`/v1/connectors/${connectionID}/folders`, { query, ...options });
-  }
-
-  /**
    * List available connector providers
    */
   listProviders(options?: RequestOptions): APIPromise<ConnectorListProvidersResponse> {
@@ -87,17 +58,6 @@ export class Connectors extends APIResource {
    */
   sync(connectionID: string, options?: RequestOptions): APIPromise<ConnectorSyncResponse> {
     return this._client.post(path`/v1/connectors/${connectionID}/sync`, options);
-  }
-
-  /**
-   * Update connection config (e.g. folder selection)
-   */
-  updateConfig(
-    connectionID: string,
-    body: ConnectorUpdateConfigParams,
-    options?: RequestOptions,
-  ): APIPromise<ConnectorUpdateConfigResponse> {
-    return this._client.patch(path`/v1/connectors/${connectionID}/config`, { body, ...options });
   }
 }
 
@@ -233,60 +193,6 @@ export namespace ConnectorDisconnectResponse {
   }
 }
 
-export interface ConnectorListChannelsResponse {
-  results: Array<ConnectorListChannelsResponse.Result>;
-}
-
-export namespace ConnectorListChannelsResponse {
-  export interface Result {
-    id: string;
-
-    name: string;
-
-    is_private?: boolean;
-
-    is_selected?: boolean;
-
-    num_members?: number;
-  }
-}
-
-export interface ConnectorListContentsResponse {
-  results: Array<ConnectorListContentsResponse.Result>;
-}
-
-export namespace ConnectorListContentsResponse {
-  export interface Result {
-    id: string;
-
-    has_children: boolean;
-
-    mime_type: string;
-
-    name: string;
-
-    type: 'folder' | 'file';
-
-    is_selected?: boolean;
-  }
-}
-
-export interface ConnectorListFoldersResponse {
-  results: Array<ConnectorListFoldersResponse.Result>;
-}
-
-export namespace ConnectorListFoldersResponse {
-  export interface Result {
-    id: string;
-
-    has_children: boolean;
-
-    name: string;
-
-    is_selected?: boolean;
-  }
-}
-
 export interface ConnectorListProvidersResponse {
   results: Array<string>;
 }
@@ -298,18 +204,6 @@ export interface ConnectorSyncResponse {
 export namespace ConnectorSyncResponse {
   export interface Results {
     message: string;
-  }
-}
-
-export interface ConnectorUpdateConfigResponse {
-  results: ConnectorUpdateConfigResponse.Results;
-}
-
-export namespace ConnectorUpdateConfigResponse {
-  export interface Results {
-    message: string;
-
-    status: 'active';
   }
 }
 
@@ -327,37 +221,16 @@ export interface ConnectorDisconnectParams {
   delete_memories?: boolean;
 }
 
-export interface ConnectorListContentsParams {
-  parent_id?: string | null;
-}
-
-export interface ConnectorListFoldersParams {
-  parent_id?: string | null;
-}
-
-export interface ConnectorUpdateConfigParams {
-  config: { [key: string]: unknown };
-
-  apply?: 'full_resync';
-}
-
 export declare namespace Connectors {
   export {
     type ConnectorRetrieveResponse as ConnectorRetrieveResponse,
     type ConnectorListResponse as ConnectorListResponse,
     type ConnectorConnectResponse as ConnectorConnectResponse,
     type ConnectorDisconnectResponse as ConnectorDisconnectResponse,
-    type ConnectorListChannelsResponse as ConnectorListChannelsResponse,
-    type ConnectorListContentsResponse as ConnectorListContentsResponse,
-    type ConnectorListFoldersResponse as ConnectorListFoldersResponse,
     type ConnectorListProvidersResponse as ConnectorListProvidersResponse,
     type ConnectorSyncResponse as ConnectorSyncResponse,
-    type ConnectorUpdateConfigResponse as ConnectorUpdateConfigResponse,
     type ConnectorListParams as ConnectorListParams,
     type ConnectorConnectParams as ConnectorConnectParams,
     type ConnectorDisconnectParams as ConnectorDisconnectParams,
-    type ConnectorListContentsParams as ConnectorListContentsParams,
-    type ConnectorListFoldersParams as ConnectorListFoldersParams,
-    type ConnectorUpdateConfigParams as ConnectorUpdateConfigParams,
   };
 }

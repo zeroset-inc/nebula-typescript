@@ -56,22 +56,6 @@ Methods:
 - <code title="delete /v1/memories/upload">client.memories.<a href="./src/resources/memories.ts">deleteUpload</a>({ ...params }) -> MemoryDeleteUploadResponse</code>
 - <code title="post /v1/memories/search">client.memories.<a href="./src/resources/memories.ts">search</a>({ ...params }) -> MemorySearchResponse</code>
 
-# Sources
-
-Types:
-
-- <code><a href="./src/resources/sources.ts">SourceUpdateResponse</a></code>
-- <code><a href="./src/resources/sources.ts">SourceListResponse</a></code>
-- <code><a href="./src/resources/sources.ts">SourceDeleteResponse</a></code>
-- <code><a href="./src/resources/sources.ts">SourceSearchResponse</a></code>
-
-Methods:
-
-- <code title="patch /v1/sources/{id}">client.sources.<a href="./src/resources/sources.ts">update</a>(id, { ...params }) -> SourceUpdateResponse</code>
-- <code title="get /v1/sources">client.sources.<a href="./src/resources/sources.ts">list</a>({ ...params }) -> SourceListResponse</code>
-- <code title="delete /v1/sources/{id}">client.sources.<a href="./src/resources/sources.ts">delete</a>(id, { ...params }) -> SourceDeleteResponse</code>
-- <code title="post /v1/sources/search">client.sources.<a href="./src/resources/sources.ts">search</a>({ ...params }) -> SourceSearchResponse</code>
-
 # Connectors
 
 Types:
@@ -80,12 +64,8 @@ Types:
 - <code><a href="./src/resources/connectors.ts">ConnectorListResponse</a></code>
 - <code><a href="./src/resources/connectors.ts">ConnectorConnectResponse</a></code>
 - <code><a href="./src/resources/connectors.ts">ConnectorDisconnectResponse</a></code>
-- <code><a href="./src/resources/connectors.ts">ConnectorListChannelsResponse</a></code>
-- <code><a href="./src/resources/connectors.ts">ConnectorListContentsResponse</a></code>
-- <code><a href="./src/resources/connectors.ts">ConnectorListFoldersResponse</a></code>
 - <code><a href="./src/resources/connectors.ts">ConnectorListProvidersResponse</a></code>
 - <code><a href="./src/resources/connectors.ts">ConnectorSyncResponse</a></code>
-- <code><a href="./src/resources/connectors.ts">ConnectorUpdateConfigResponse</a></code>
 
 Methods:
 
@@ -93,12 +73,8 @@ Methods:
 - <code title="get /v1/connectors">client.connectors.<a href="./src/resources/connectors.ts">list</a>({ ...params }) -> ConnectorListResponse</code>
 - <code title="post /v1/connectors/{provider}/connect">client.connectors.<a href="./src/resources/connectors.ts">connect</a>(provider, { ...params }) -> ConnectorConnectResponse</code>
 - <code title="delete /v1/connectors/{connection_id}">client.connectors.<a href="./src/resources/connectors.ts">disconnect</a>(connectionID, { ...params }) -> ConnectorDisconnectResponse</code>
-- <code title="get /v1/connectors/{connection_id}/channels">client.connectors.<a href="./src/resources/connectors.ts">listChannels</a>(connectionID) -> ConnectorListChannelsResponse</code>
-- <code title="get /v1/connectors/{connection_id}/contents">client.connectors.<a href="./src/resources/connectors.ts">listContents</a>(connectionID, { ...params }) -> ConnectorListContentsResponse</code>
-- <code title="get /v1/connectors/{connection_id}/folders">client.connectors.<a href="./src/resources/connectors.ts">listFolders</a>(connectionID, { ...params }) -> ConnectorListFoldersResponse</code>
 - <code title="get /v1/connectors/providers">client.connectors.<a href="./src/resources/connectors.ts">listProviders</a>() -> ConnectorListProvidersResponse</code>
 - <code title="post /v1/connectors/{connection_id}/sync">client.connectors.<a href="./src/resources/connectors.ts">sync</a>(connectionID) -> ConnectorSyncResponse</code>
-- <code title="patch /v1/connectors/{connection_id}/config">client.connectors.<a href="./src/resources/connectors.ts">updateConfig</a>(connectionID, { ...params }) -> ConnectorUpdateConfigResponse</code>
 
 # Snapshots
 
