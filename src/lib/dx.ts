@@ -86,8 +86,8 @@ export class Nebula extends GeneratedNebula {
   async storeMemory(memory: MemoryInput, options?: RequestOptions): Promise<StoredMemoryResult>;
   async storeMemory(memory: MemoryInput, options?: RequestOptions): Promise<StoredMemoryResult> {
     if (memory.memory_id) {
-      const { memory_id: memoryID, collectionId: _collectionId, content, ...rest } = memory;
-      await this.memories.append(memoryID, toMemoryAppendParams({ ...rest, content }), options);
+      const { memory_id: memoryID, ...appendMemory } = memory;
+      await this.memories.append(memoryID, toMemoryAppendParams(appendMemory), options);
       return memoryID;
     }
 
@@ -317,10 +317,14 @@ function normalizeClientOptions(options: CompatClientOptions): ClientOptions {
   } = options;
   return {
     ...rest,
-    apiKey: rest.apiKey ?? apiKeyAlias,
-    accessToken: rest.accessToken ?? bearerToken ?? bearerTokenAlias,
-    baseURL: rest.baseURL ?? baseUrl ?? baseURLAlias,
+    apiKey: firstDefined(rest.apiKey, apiKeyAlias),
+    accessToken: firstDefined(rest.accessToken, bearerToken, bearerTokenAlias),
+    baseURL: firstDefined(rest.baseURL, baseUrl, baseURLAlias),
   };
+}
+
+function firstDefined<T>(...values: (T | undefined)[]): T | undefined {
+  return values.find((value) => value !== undefined);
 }
 
 function looksLikeNebulaAPIKey(token: string): boolean {

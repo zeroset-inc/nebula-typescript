@@ -319,6 +319,32 @@ describe('instantiate client', () => {
     );
   });
 
+  test('storeMemory append path preserves camelCase collectionId alias', async () => {
+    const client = new Nebula({
+      apiKey: 'My API Key',
+      accessToken: 'My Access Token',
+    });
+    const append = jest
+      .spyOn(client.memories, 'append')
+      .mockResolvedValue({ results: { success: true } } as never);
+
+    await expect(
+      client.storeMemory({
+        collectionId: 'collection-123',
+        memory_id: 'memory-123',
+        content: 'additional context',
+      }),
+    ).resolves.toBe('memory-123');
+    expect(append).toHaveBeenCalledWith(
+      'memory-123',
+      expect.objectContaining({
+        collection_id: 'collection-123',
+        raw_text: 'additional context',
+      }),
+      undefined,
+    );
+  });
+
   test('legacy delete memory alias keeps APIPromise helpers', async () => {
     let capturedURL = '';
     const client = new Nebula({
@@ -570,6 +596,18 @@ describe('instantiate client', () => {
     const client = new Nebula({ apiKey: 'My API Key', accessToken: 'My Access Token' });
     expect(client.apiKey).toBe('My API Key');
     expect(client.accessToken).toBe('My Access Token');
+  });
+
+  test('explicit null client options suppress environment variables', () => {
+    process.env['NEBULA_API_KEY'] = 'env API Key';
+    process.env['NEBULA_BEARER_TOKEN'] = 'env Access Token';
+    process.env['NEBULA_BASE_URL'] = 'https://example.com/from_env';
+
+    const client = new Nebula({ apiKey: null, accessToken: null, baseURL: null });
+
+    expect(client.apiKey).toBeNull();
+    expect(client.accessToken).toBeNull();
+    expect(client.baseURL).toEqual('https://api.trynebula.ai');
   });
 });
 
