@@ -19,18 +19,11 @@ export {
   type ConnectorListResponse,
   type ConnectorConnectResponse,
   type ConnectorDisconnectResponse,
-  type ConnectorListChannelsResponse,
-  type ConnectorListContentsResponse,
-  type ConnectorListFoldersResponse,
   type ConnectorListProvidersResponse,
   type ConnectorSyncResponse,
-  type ConnectorUpdateConfigResponse,
   type ConnectorListParams,
   type ConnectorConnectParams,
   type ConnectorDisconnectParams,
-  type ConnectorListContentsParams,
-  type ConnectorListFoldersParams,
-  type ConnectorUpdateConfigParams,
 } from './connectors';
 export {
   Memories,
@@ -60,15 +53,4 @@ export {
   type SnapshotExportParams,
   type SnapshotImportParams,
 } from './snapshots';
-export {
-  Sources,
-  type SourceUpdateResponse,
-  type SourceListResponse,
-  type SourceDeleteResponse,
-  type SourceSearchResponse,
-  type SourceUpdateParams,
-  type SourceListParams,
-  type SourceDeleteParams,
-  type SourceSearchParams,
-} from './sources';
 export { type HealthResponse } from './top-level';

@@ -37,18 +37,11 @@ import {
   ConnectorConnectResponse,
   ConnectorDisconnectParams,
   ConnectorDisconnectResponse,
-  ConnectorListChannelsResponse,
-  ConnectorListContentsParams,
-  ConnectorListContentsResponse,
-  ConnectorListFoldersParams,
-  ConnectorListFoldersResponse,
   ConnectorListParams,
   ConnectorListProvidersResponse,
   ConnectorListResponse,
   ConnectorRetrieveResponse,
   ConnectorSyncResponse,
-  ConnectorUpdateConfigParams,
-  ConnectorUpdateConfigResponse,
   Connectors,
 } from './resources/connectors';
 import {
@@ -79,17 +72,6 @@ import {
   SnapshotImportResponse,
   Snapshots,
 } from './resources/snapshots';
-import {
-  SourceDeleteParams,
-  SourceDeleteResponse,
-  SourceListParams,
-  SourceListResponse,
-  SourceSearchParams,
-  SourceSearchResponse,
-  SourceUpdateParams,
-  SourceUpdateResponse,
-  Sources,
-} from './resources/sources';
 import { type Fetch } from './internal/builtin-types';
 import { HeadersLike, NullableHeaders, buildHeaders } from './internal/headers';
 import { FinalRequestOptions, RequestOptions } from './internal/request-options';
@@ -837,14 +819,12 @@ export class Nebula {
 
   collections: API.Collections = new API.Collections(this);
   memories: API.Memories = new API.Memories(this);
-  sources: API.Sources = new API.Sources(this);
   connectors: API.Connectors = new API.Connectors(this);
   snapshots: API.Snapshots = new API.Snapshots(this);
 }
 
 Nebula.Collections = Collections;
 Nebula.Memories = Memories;
-Nebula.Sources = Sources;
 Nebula.Connectors = Connectors;
 Nebula.Snapshots = Snapshots;
 
@@ -890,35 +870,16 @@ export declare namespace Nebula {
   };
 
   export {
-    Sources as Sources,
-    type SourceUpdateResponse as SourceUpdateResponse,
-    type SourceListResponse as SourceListResponse,
-    type SourceDeleteResponse as SourceDeleteResponse,
-    type SourceSearchResponse as SourceSearchResponse,
-    type SourceUpdateParams as SourceUpdateParams,
-    type SourceListParams as SourceListParams,
-    type SourceDeleteParams as SourceDeleteParams,
-    type SourceSearchParams as SourceSearchParams,
-  };
-
-  export {
     Connectors as Connectors,
     type ConnectorRetrieveResponse as ConnectorRetrieveResponse,
     type ConnectorListResponse as ConnectorListResponse,
     type ConnectorConnectResponse as ConnectorConnectResponse,
     type ConnectorDisconnectResponse as ConnectorDisconnectResponse,
-    type ConnectorListChannelsResponse as ConnectorListChannelsResponse,
-    type ConnectorListContentsResponse as ConnectorListContentsResponse,
-    type ConnectorListFoldersResponse as ConnectorListFoldersResponse,
     type ConnectorListProvidersResponse as ConnectorListProvidersResponse,
     type ConnectorSyncResponse as ConnectorSyncResponse,
-    type ConnectorUpdateConfigResponse as ConnectorUpdateConfigResponse,
     type ConnectorListParams as ConnectorListParams,
     type ConnectorConnectParams as ConnectorConnectParams,
     type ConnectorDisconnectParams as ConnectorDisconnectParams,
-    type ConnectorListContentsParams as ConnectorListContentsParams,
-    type ConnectorListFoldersParams as ConnectorListFoldersParams,
-    type ConnectorUpdateConfigParams as ConnectorUpdateConfigParams,
   };
 
   export {
