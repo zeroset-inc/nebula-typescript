@@ -173,217 +173,180 @@ export class Memories extends APIResource {
   }
 }
 
-/**
- * Create-memory success response. Standard memory ingestion returns an accepted
- * async-ingestion envelope; snapshot mode returns the updated snapshot
- * synchronously.
- */
-export type MemoryCreateResponse =
-  | MemoryCreateResponse.NebulaResultsMemoryCreateAcceptedResponse
-  | MemoryCreateResponse.NebulaResultsSnapshotMutationResult;
+export interface MemoryCreateResponse {
+  /**
+   * Updated snapshot returned by snapshot-mode memory writes.
+   */
+  results: MemoryCreateResponse.Results;
+}
 
 export namespace MemoryCreateResponse {
-  export interface NebulaResultsMemoryCreateAcceptedResponse {
+  /**
+   * Updated snapshot returned by snapshot-mode memory writes.
+   */
+  export interface Results {
     /**
-     * Accepted-response envelope for async memory ingestion.
+     * Portable full snapshot owned by the client.
      */
-    results: NebulaResultsMemoryCreateAcceptedResponse.Results;
+    snapshot: Results.Snapshot;
   }
 
-  export namespace NebulaResultsMemoryCreateAcceptedResponse {
+  export namespace Results {
     /**
-     * Accepted-response envelope for async memory ingestion.
+     * Portable full snapshot owned by the client.
      */
-    export interface Results {
-      id: string;
+    export interface Snapshot {
+      collection_id: string;
 
-      message: string;
+      root_hash: string;
 
-      engram_id?: string | null;
+      created_at?: string;
 
-      memory_id?: string | null;
+      format_version?: number;
 
-      status?: 'parsing' | 'processing' | 'queued' | null;
+      generation?: number;
 
-      task_id?: string | null;
-    }
-  }
-
-  export interface NebulaResultsSnapshotMutationResult {
-    /**
-     * Updated snapshot returned by snapshot-mode memory writes.
-     */
-    results: NebulaResultsSnapshotMutationResult.Results;
-  }
-
-  export namespace NebulaResultsSnapshotMutationResult {
-    /**
-     * Updated snapshot returned by snapshot-mode memory writes.
-     */
-    export interface Results {
       /**
-       * Portable full snapshot owned by the client.
+       * A complete graph payload or a context subgraph payload.
        */
-      snapshot: Results.Snapshot;
+      graph?: Snapshot.Graph;
     }
 
-    export namespace Results {
+    export namespace Snapshot {
       /**
-       * Portable full snapshot owned by the client.
+       * A complete graph payload or a context subgraph payload.
        */
-      export interface Snapshot {
-        collection_id: string;
-
-        root_hash: string;
-
-        created_at?: string;
-
-        format_version?: number;
-
-        generation?: number;
+      export interface Graph {
+        entities?: Array<Graph.Entity>;
 
         /**
-         * A complete graph payload or a context subgraph payload.
+         * A positionally-aligned masked embedding matrix.
          */
-        graph?: Snapshot.Graph;
+        entity_description_embeddings?: Graph.EntityDescriptionEmbeddings;
+
+        /**
+         * A positionally-aligned masked embedding matrix.
+         */
+        relationship_description_embeddings?: Graph.RelationshipDescriptionEmbeddings;
+
+        /**
+         * A positionally-aligned masked embedding matrix.
+         */
+        relationship_relation_embeddings?: Graph.RelationshipRelationEmbeddings;
+
+        relationships?: Array<Graph.Relationship>;
       }
 
-      export namespace Snapshot {
+      export namespace Graph {
         /**
-         * A complete graph payload or a context subgraph payload.
+         * Canonical entity record used in snapshots, WAL ops, and segments.
          */
-        export interface Graph {
-          entities?: Array<Graph.Entity>;
+        export interface Entity {
+          id: string;
 
-          /**
-           * A positionally-aligned masked embedding matrix.
-           */
-          entity_description_embeddings?: Graph.EntityDescriptionEmbeddings;
+          created_at: string;
 
-          /**
-           * A positionally-aligned masked embedding matrix.
-           */
-          relationship_description_embeddings?: Graph.RelationshipDescriptionEmbeddings;
+          engram_id: string;
 
-          /**
-           * A positionally-aligned masked embedding matrix.
-           */
-          relationship_relation_embeddings?: Graph.RelationshipRelationEmbeddings;
+          name: string;
 
-          relationships?: Array<Graph.Relationship>;
+          updated_at: string;
+
+          category?: string | null;
+
+          chunk_ids?: Array<string>;
+
+          collection_id?: string;
+
+          description?: string | null;
+
+          fts_terms?: { [key: string]: number } | null;
+
+          metadata?: { [key: string]: unknown };
+
+          relationship_count?: number;
         }
 
-        export namespace Graph {
-          /**
-           * Canonical entity record used in snapshots, WAL ops, and segments.
-           */
-          export interface Entity {
-            id: string;
+        /**
+         * A positionally-aligned masked embedding matrix.
+         */
+        export interface EntityDescriptionEmbeddings {
+          dim?: number;
 
-            created_at: string;
+          encoding?: 'npy-base64';
 
-            engram_id: string;
+          mask_b64?: string;
 
-            name: string;
+          values_b64?: string;
+        }
 
-            updated_at: string;
+        /**
+         * A positionally-aligned masked embedding matrix.
+         */
+        export interface RelationshipDescriptionEmbeddings {
+          dim?: number;
 
-            category?: string | null;
+          encoding?: 'npy-base64';
 
-            chunk_ids?: Array<string>;
+          mask_b64?: string;
 
-            collection_id?: string;
+          values_b64?: string;
+        }
 
-            description?: string | null;
+        /**
+         * A positionally-aligned masked embedding matrix.
+         */
+        export interface RelationshipRelationEmbeddings {
+          dim?: number;
 
-            fts_terms?: { [key: string]: number } | null;
+          encoding?: 'npy-base64';
 
-            metadata?: { [key: string]: unknown };
+          mask_b64?: string;
 
-            relationship_count?: number;
-          }
+          values_b64?: string;
+        }
 
-          /**
-           * A positionally-aligned masked embedding matrix.
-           */
-          export interface EntityDescriptionEmbeddings {
-            dim?: number;
+        /**
+         * Canonical relationship record used in snapshots, WAL ops, and segments.
+         */
+        export interface Relationship {
+          id: string;
 
-            encoding?: 'npy-base64';
+          created_at: string;
 
-            mask_b64?: string;
+          object_id: string;
 
-            values_b64?: string;
-          }
+          subject_id: string;
 
-          /**
-           * A positionally-aligned masked embedding matrix.
-           */
-          export interface RelationshipDescriptionEmbeddings {
-            dim?: number;
+          updated_at: string;
 
-            encoding?: 'npy-base64';
+          category?: string | null;
 
-            mask_b64?: string;
+          chunk_ids?: Array<string>;
 
-            values_b64?: string;
-          }
+          collection_id?: string;
 
-          /**
-           * A positionally-aligned masked embedding matrix.
-           */
-          export interface RelationshipRelationEmbeddings {
-            dim?: number;
+          description?: string | null;
 
-            encoding?: 'npy-base64';
+          engram_id?: string | null;
 
-            mask_b64?: string;
+          inference_metadata?: { [key: string]: unknown } | null;
 
-            values_b64?: string;
-          }
+          metadata?: { [key: string]: unknown };
 
-          /**
-           * Canonical relationship record used in snapshots, WAL ops, and segments.
-           */
-          export interface Relationship {
-            id: string;
+          object?: string | null;
 
-            created_at: string;
+          predicate?: string;
 
-            object_id: string;
+          relationship_type?: string | null;
 
-            subject_id: string;
+          subject?: string | null;
 
-            updated_at: string;
+          temporal_precision?: string | null;
 
-            category?: string | null;
+          valid_span?: { [key: string]: unknown } | null;
 
-            chunk_ids?: Array<string>;
-
-            collection_id?: string;
-
-            description?: string | null;
-
-            engram_id?: string | null;
-
-            inference_metadata?: { [key: string]: unknown } | null;
-
-            metadata?: { [key: string]: unknown };
-
-            object?: string | null;
-
-            predicate?: string;
-
-            relationship_type?: string | null;
-
-            subject?: string | null;
-
-            temporal_precision?: string | null;
-
-            valid_span?: { [key: string]: unknown } | null;
-
-            weight?: number | null;
-          }
+          weight?: number | null;
         }
       }
     }
@@ -742,19 +705,23 @@ export namespace MemoryDeleteResponse {
 }
 
 export type MemoryAppendResponse =
-  | MemoryAppendResponse.NebulaResultsMessageResponse
+  | MemoryAppendResponse.NebulaResultsAppendMemoryResponse
   | MemoryAppendResponse.NebulaResultsIngestionResponse;
 
 export namespace MemoryAppendResponse {
-  export interface NebulaResultsMessageResponse {
-    results: NebulaResultsMessageResponse.Results;
+  export interface NebulaResultsAppendMemoryResponse {
+    results: NebulaResultsAppendMemoryResponse.Results;
   }
 
-  export namespace NebulaResultsMessageResponse {
+  export namespace NebulaResultsAppendMemoryResponse {
     export interface Results {
       id: string;
 
       message: Results.Message;
+
+      appended_messages?: Array<Results.AppendedMessage>;
+
+      chunk_ids?: Array<string>;
 
       metadata?: { [key: string]: unknown };
     }
@@ -780,6 +747,12 @@ export namespace MemoryAppendResponse {
         tool_call_id?: string | null;
 
         tool_calls?: Array<{ [key: string]: unknown }> | null;
+      }
+
+      export interface AppendedMessage {
+        message_id: string;
+
+        chunk_ids?: Array<string>;
       }
     }
   }
