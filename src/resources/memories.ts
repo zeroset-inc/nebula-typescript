@@ -742,19 +742,21 @@ export namespace MemoryDeleteResponse {
 }
 
 export type MemoryAppendResponse =
-  | MemoryAppendResponse.NebulaResultsMessageResponse
+  | MemoryAppendResponse.NebulaResultsAppendMemoryResponse
   | MemoryAppendResponse.NebulaResultsIngestionResponse;
 
 export namespace MemoryAppendResponse {
-  export interface NebulaResultsMessageResponse {
-    results: NebulaResultsMessageResponse.Results;
+  export interface NebulaResultsAppendMemoryResponse {
+    results: NebulaResultsAppendMemoryResponse.Results;
   }
 
-  export namespace NebulaResultsMessageResponse {
+  export namespace NebulaResultsAppendMemoryResponse {
     export interface Results {
       id: string;
 
       message: Results.Message;
+
+      appended_messages?: Array<Results.AppendedMessage>;
 
       metadata?: { [key: string]: unknown };
     }
@@ -780,6 +782,12 @@ export namespace MemoryAppendResponse {
         tool_call_id?: string | null;
 
         tool_calls?: Array<{ [key: string]: unknown }> | null;
+      }
+
+      export interface AppendedMessage {
+        message_id: string;
+
+        chunk_ids?: Array<string>;
       }
     }
   }
@@ -896,11 +904,11 @@ export namespace MemorySearchResponse {
     export interface Results {
       query: string;
 
-      episodes?: Array<{ [key: string]: unknown }>;
+      episodic?: Array<{ [key: string]: unknown }>;
 
-      procedures?: Array<{ [key: string]: unknown }>;
+      procedural?: Array<{ [key: string]: unknown }>;
 
-      semantics?: Array<{ [key: string]: unknown }>;
+      semantic?: Array<{ [key: string]: unknown }>;
 
       sources?: Array<{ [key: string]: unknown }>;
 
@@ -960,13 +968,13 @@ export namespace MemorySearchResponse {
 
       entities?: Array<Results.Entity>;
 
-      episodes?: Array<Results.Episode>;
+      episodic?: Array<Results.Episodic>;
 
       inference_hints?: Array<Results.InferenceHint>;
 
-      procedures?: Array<Results.Procedure>;
+      procedural?: Array<Results.Procedural>;
 
-      semantics?: Array<Results.Semantic>;
+      semantic?: Array<Results.Semantic>;
 
       sources?: Array<Results.Source>;
 
@@ -998,7 +1006,7 @@ export namespace MemorySearchResponse {
        * Represents a cluster of temporally related facts/events discovered during graph
        * traversal.
        */
-      export interface Episode {
+      export interface Episodic {
         id: string;
 
         name: string;
@@ -1070,7 +1078,7 @@ export namespace MemorySearchResponse {
        * dislikes, or habitually does. Distinct from facts which are descriptive
        * assertions.
        */
-      export interface Procedure {
+      export interface Procedural {
         id: string;
 
         statement: string;
