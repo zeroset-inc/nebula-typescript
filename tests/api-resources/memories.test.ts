@@ -129,6 +129,7 @@ describe('resource memories', () => {
           metadata: { foo: 'bar' },
           parent_id: '182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e',
           source_role_id: '182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e',
+          timestamp: '2019-12-27T18:11:19.117Z',
         },
       ],
       metadata: { foo: 'bar' },
@@ -189,8 +190,8 @@ describe('resource memories', () => {
     const response = await client.memories.deleteUpload({ s3_key: 's3_key' });
   });
 
-  test('search: only required params', async () => {
-    const responsePromise = client.memories.search({ query: 'query' });
+  test('search', async () => {
+    const responsePromise = client.memories.search({});
     const rawResponse = await responsePromise.asResponse();
     expect(rawResponse).toBeInstanceOf(Response);
     const response = await responsePromise;
@@ -198,91 +199,5 @@ describe('resource memories', () => {
     const dataAndResponse = await responsePromise.withResponse();
     expect(dataAndResponse.data).toBe(response);
     expect(dataAndResponse.response).toBe(rawResponse);
-  });
-
-  test('search: required and optional params', async () => {
-    const response = await client.memories.search({
-      query: 'query',
-      collection_ids: ['string'],
-      effort: 'auto',
-      filters: { foo: 'bar' },
-      search_settings: {
-        effort: 'auto',
-        enable_conceptual_expansion: true,
-        filters: { foo: 'bar' },
-        fulltext_weight: 0.2,
-        graph_settings: { foo: 'bar' },
-        has_pruning_gate: true,
-        include_scores: true,
-        semantic_weight: 0.8,
-        verbose: false,
-      },
-      snapshot: {
-        collection_id: '182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e',
-        root_hash: 'root_hash',
-        created_at: '2019-12-27T18:11:19.117Z',
-        format_version: 0,
-        generation: 0,
-        graph: {
-          entities: [
-            {
-              id: 'id',
-              created_at: '2019-12-27T18:11:19.117Z',
-              engram_id: 'engram_id',
-              name: 'name',
-              updated_at: '2019-12-27T18:11:19.117Z',
-              category: 'category',
-              chunk_ids: ['string'],
-              collection_id: 'collection_id',
-              description: 'description',
-              fts_terms: { foo: 0 },
-              metadata: { foo: 'bar' },
-              relationship_count: 0,
-            },
-          ],
-          entity_description_embeddings: {
-            dim: 0,
-            encoding: 'npy-base64',
-            mask_b64: 'mask_b64',
-            values_b64: 'values_b64',
-          },
-          relationship_description_embeddings: {
-            dim: 0,
-            encoding: 'npy-base64',
-            mask_b64: 'mask_b64',
-            values_b64: 'values_b64',
-          },
-          relationship_relation_embeddings: {
-            dim: 0,
-            encoding: 'npy-base64',
-            mask_b64: 'mask_b64',
-            values_b64: 'values_b64',
-          },
-          relationships: [
-            {
-              id: 'id',
-              created_at: '2019-12-27T18:11:19.117Z',
-              object_id: 'object_id',
-              subject_id: 'subject_id',
-              updated_at: '2019-12-27T18:11:19.117Z',
-              category: 'category',
-              chunk_ids: ['string'],
-              collection_id: 'collection_id',
-              description: 'description',
-              engram_id: 'engram_id',
-              inference_metadata: { foo: 'bar' },
-              metadata: { foo: 'bar' },
-              object: 'object',
-              predicate: 'predicate',
-              relationship_type: 'relationship_type',
-              subject: 'subject',
-              temporal_precision: 'temporal_precision',
-              valid_span: { foo: 'bar' },
-              weight: 0,
-            },
-          ],
-        },
-      },
-    });
   });
 });
