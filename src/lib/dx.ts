@@ -87,8 +87,9 @@ export interface MemoryCreateInput
   memory_id?: undefined | null;
 }
 
-export interface MemoryAppendInput extends MemoryCommonInput {
+export interface MemoryAppendInput extends Omit<MemoryCommonInput, 'ingestion_mode'> {
   memory_id: string;
+  ingestion_mode?: MemoryAppendParams['ingestion_mode'];
 }
 
 export type MemoryInput = MemoryCreateInput | MemoryAppendInput;
