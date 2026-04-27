@@ -1,7 +1,7 @@
 import iconv from 'iconv-lite';
-import { stringify } from 'nebula/internal/qs';
-import { encode } from 'nebula/internal/qs/utils';
-import { StringifyOptions } from 'nebula/internal/qs/types';
+import { stringify } from '@nebula-ai/sdk/internal/qs';
+import { encode } from '@nebula-ai/sdk/internal/qs/utils';
+import { StringifyOptions } from '@nebula-ai/sdk/internal/qs/types';
 import { empty_test_cases } from './empty-keys-cases';
 import assert from 'assert';
 

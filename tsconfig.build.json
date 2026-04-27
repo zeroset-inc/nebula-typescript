@@ -5,8 +5,8 @@
   "compilerOptions": {
     "rootDir": "./dist/src",
     "paths": {
-      "nebula/*": ["./dist/src/*"],
-      "nebula": ["./dist/src/index.ts"]
+      "@nebula-ai/sdk/*": ["./dist/src/*"],
+      "@nebula-ai/sdk": ["./dist/src/index.ts"]
     },
     "noEmit": false,
     "declaration": true,

@@ -1,5 +1,5 @@
-import { multipartFormRequestOptions, createForm } from 'nebula/internal/uploads';
-import { toFile } from 'nebula/core/uploads';
+import { multipartFormRequestOptions, createForm } from '@nebula-ai/sdk/internal/uploads';
+import { toFile } from '@nebula-ai/sdk/core/uploads';
 
 describe('form data validation', () => {
   test('valid values do not error', async () => {

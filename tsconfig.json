@@ -8,8 +8,8 @@
     "moduleResolution": "node",
     "esModuleInterop": true,
     "paths": {
-      "nebula/*": ["./src/*"],
-      "nebula": ["./src/index.ts"]
+      "@nebula-ai/sdk/*": ["./src/*"],
+      "@nebula-ai/sdk": ["./src/index.ts"]
     },
     "noEmit": true,
 

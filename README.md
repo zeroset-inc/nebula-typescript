@@ -1,21 +1,18 @@
 # Nebula TypeScript API Library
 
-[![NPM version](<https://img.shields.io/npm/v/nebula.svg?label=npm%20(stable)>)](https://npmjs.org/package/nebula) ![npm bundle size](https://img.shields.io/bundlephobia/minzip/nebula)
+[![NPM version](<https://img.shields.io/npm/v/@nebula-ai/sdk.svg?label=npm%20(stable)>)](https://npmjs.org/package/@nebula-ai/sdk) ![npm bundle size](https://img.shields.io/bundlephobia/minzip/@nebula-ai/sdk)
 
 This library provides convenient access to the Nebula REST API from server-side TypeScript or JavaScript.
 
-The full API of this library can be found in [api.md](api.md).
+The REST API documentation can be found on [docs.trynebula.ai](https://docs.trynebula.ai). The full API of this library can be found in [api.md](api.md).
 
 It is generated with [Stainless](https://www.stainless.com/).
 
 ## Installation
 
 ```sh
-npm install git+ssh://git@github.com:stainless-sdks/nebula-typescript.git
+npm install @nebula-ai/sdk
 ```
-
-> [!NOTE]
-> Once this package is [published to npm](https://www.stainless.com/docs/guides/publish), this will become: `npm install nebula`
 
 ## Usage
 
@@ -23,15 +20,18 @@ The full API of this library can be found in [api.md](api.md).
 
 <!-- prettier-ignore -->
 ```js
-import Nebula from 'nebula';
+import Nebula from '@nebula-ai/sdk';
 
 const client = new Nebula({
-  bearerToken: process.env['NEBULA_BEARER_TOKEN'], // This is the default and can be omitted
+  accessToken: process.env['NEBULA_BEARER_TOKEN'], // This is the default and can be omitted
 });
 
-const response = await client.chunks.search({ query: 'query' });
+const collection = await client.collections.create({
+  name: 'Example collection',
+  description: 'Memory store for my app',
+});
 
-console.log(response.results);
+console.log(collection.results);
 ```
 
 ### Request & Response types
@@ -40,14 +40,17 @@ This library includes TypeScript definitions for all request params and response
 
 <!-- prettier-ignore -->
 ```ts
-import Nebula from 'nebula';
+import Nebula from '@nebula-ai/sdk';
 
 const client = new Nebula({
-  bearerToken: process.env['NEBULA_BEARER_TOKEN'], // This is the default and can be omitted
+  accessToken: process.env['NEBULA_BEARER_TOKEN'], // This is the default and can be omitted
 });
 
-const params: Nebula.ChunkSearchParams = { query: 'query' };
-const response: Nebula.ChunkSearchResponse = await client.chunks.search(params);
+const params: Nebula.CollectionCreateParams = {
+  name: 'Example collection',
+  description: 'Memory store for my app',
+};
+const collection: Nebula.CollectionCreateResponse = await client.collections.create(params);
 ```
 
 Documentation for each method, request param, and response field are available in docstrings and will appear on hover in most modern editors.
@@ -60,15 +63,17 @@ a subclass of `APIError` will be thrown:
 
 <!-- prettier-ignore -->
 ```ts
-const response = await client.chunks.search({ query: 'query' }).catch(async (err) => {
-  if (err instanceof Nebula.APIError) {
-    console.log(err.status); // 400
-    console.log(err.name); // BadRequestError
-    console.log(err.headers); // {server: 'nginx', ...}
-  } else {
-    throw err;
-  }
-});
+const collection = await client.collections
+  .create({ name: 'Example collection', description: 'Memory store for my app' })
+  .catch(async (err) => {
+    if (err instanceof Nebula.APIError) {
+      console.log(err.status); // 400
+      console.log(err.name); // BadRequestError
+      console.log(err.headers); // {server: 'nginx', ...}
+    } else {
+      throw err;
+    }
+  });
 ```
 
 Error codes are as follows:
@@ -100,7 +105,7 @@ const client = new Nebula({
 });
 
 // Or, configure per-request:
-await client.chunks.search({ query: 'query' }, {
+await client.collections.create({ name: 'Example collection', description: 'Memory store for my app' }, {
   maxRetries: 5,
 });
 ```
@@ -117,7 +122,7 @@ const client = new Nebula({
 });
 
 // Override per-request:
-await client.chunks.search({ query: 'query' }, {
+await client.collections.create({ name: 'Example collection', description: 'Memory store for my app' }, {
   timeout: 5 * 1000,
 });
 ```
@@ -140,15 +145,17 @@ Unlike `.asResponse()` this method consumes the body, returning once it is parse
 ```ts
 const client = new Nebula();
 
-const response = await client.chunks.search({ query: 'query' }).asResponse();
+const response = await client.collections
+  .create({ name: 'Example collection', description: 'Memory store for my app' })
+  .asResponse();
 console.log(response.headers.get('X-My-Header'));
 console.log(response.statusText); // access the underlying Response object
 
-const { data: response, response: raw } = await client.chunks
-  .search({ query: 'query' })
+const { data: collection, response: raw } = await client.collections
+  .create({ name: 'Example collection', description: 'Memory store for my app' })
   .withResponse();
 console.log(raw.headers.get('X-My-Header'));
-console.log(response.results);
+console.log(collection.results);
 ```
 
 ### Logging
@@ -165,7 +172,7 @@ The log level can be configured in two ways:
 2. Using the `logLevel` client option (overrides the environment variable if set)
 
 ```ts
-import Nebula from 'nebula';
+import Nebula from '@nebula-ai/sdk';
 
 const client = new Nebula({
   logLevel: 'debug', // Show all log messages
@@ -193,7 +200,7 @@ When providing a custom logger, the `logLevel` option still controls which messa
 below the configured level will not be sent to your logger.
 
 ```ts
-import Nebula from 'nebula';
+import Nebula from '@nebula-ai/sdk';
 import pino from 'pino';
 
 const logger = pino();
@@ -228,7 +235,7 @@ parameter. This library doesn't validate at runtime that the request matches the
 send will be sent as-is.
 
 ```ts
-client.chunks.search({
+client.collections.create({
   // ...
   // @ts-expect-error baz is not yet public
   baz: 'undocumented option',
@@ -262,7 +269,7 @@ globalThis.fetch = fetch;
 Or pass it to the client:
 
 ```ts
-import Nebula from 'nebula';
+import Nebula from '@nebula-ai/sdk';
 import fetch from 'my-fetch';
 
 const client = new Nebula({ fetch });
@@ -273,7 +280,7 @@ const client = new Nebula({ fetch });
 If you want to set custom `fetch` options without overriding the `fetch` function, you can provide a `fetchOptions` object when instantiating the client or making a request. (Request-specific options override client options.)
 
 ```ts
-import Nebula from 'nebula';
+import Nebula from '@nebula-ai/sdk';
 
 const client = new Nebula({
   fetchOptions: {
@@ -290,7 +297,7 @@ options to requests:
 <img src="https://raw.githubusercontent.com/stainless-api/sdk-assets/refs/heads/main/node.svg" align="top" width="18" height="21"> **Node** <sup>[[docs](https://github.com/nodejs/undici/blob/main/docs/docs/api/ProxyAgent.md#example---proxyagent-with-fetch)]</sup>
 
 ```ts
-import Nebula from 'nebula';
+import Nebula from '@nebula-ai/sdk';
 import * as undici from 'undici';
 
 const proxyAgent = new undici.ProxyAgent('http://localhost:8888');
@@ -304,7 +311,7 @@ const client = new Nebula({
 <img src="https://raw.githubusercontent.com/stainless-api/sdk-assets/refs/heads/main/bun.svg" align="top" width="18" height="21"> **Bun** <sup>[[docs](https://bun.sh/guides/http/proxy)]</sup>
 
 ```ts
-import Nebula from 'nebula';
+import Nebula from '@nebula-ai/sdk';
 
 const client = new Nebula({
   fetchOptions: {
@@ -316,7 +323,7 @@ const client = new Nebula({
 <img src="https://raw.githubusercontent.com/stainless-api/sdk-assets/refs/heads/main/deno.svg" align="top" width="18" height="21"> **Deno** <sup>[[docs](https://docs.deno.com/api/deno/~/Deno.createHttpClient)]</sup>
 
 ```ts
-import Nebula from 'npm:nebula';
+import Nebula from 'npm:@nebula-ai/sdk';
 
 const httpClient = Deno.createHttpClient({ proxy: { url: 'http://localhost:8888' } });
 const client = new Nebula({
@@ -338,7 +345,7 @@ This package generally follows [SemVer](https://semver.org/spec/v2.0.0.html) con
 
 We take backwards-compatibility seriously and work hard to ensure you can rely on a smooth upgrade experience.
 
-We are keen for your feedback; please open an [issue](https://www.github.com/stainless-sdks/nebula-typescript/issues) with questions, bugs, or suggestions.
+We are keen for your feedback; please open an [issue](https://www.github.com/nebula-agi/nebula-typescript/issues) with questions, bugs, or suggestions.
 
 ## Requirements
 
