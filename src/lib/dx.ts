@@ -81,9 +81,10 @@ export interface MemoryCreateInput
   memory_id?: undefined | null;
 }
 
-export interface MemoryAppendInput extends Omit<MemoryCommonInput, 'ingestion_mode'> {
+export interface MemoryAppendInput extends Omit<MemoryCommonInput, 'ingestion_mode' | 'messages'> {
   memory_id: string;
   ingestion_mode?: MemoryAppendParams['ingestion_mode'];
+  messages?: MemoryAppendParams['messages'];
 }
 
 export type MemoryInput = MemoryCreateInput | MemoryAppendInput;
@@ -367,7 +368,7 @@ function toMemoryCreateParams(memory: MemoryCreateInput): MemoryCreateParams {
     params.collection_id = collectionID;
   }
 
-  if (content !== undefined) {
+  if (content != null) {
     if (typeof content === 'string') {
       params.raw_text = content;
     } else {
