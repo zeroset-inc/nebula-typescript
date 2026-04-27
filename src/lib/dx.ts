@@ -271,7 +271,7 @@ export class Nebula extends GeneratedNebula {
   ): APIPromise<MemoryDeleteManyResponse> {
     return super.post<MemoryDeleteManyResponse>(
       '/v1/memories/delete',
-      Promise.resolve(options).then((resolved) => ({ body: memoryIDs, ...resolved })),
+      Promise.resolve(options).then((resolved) => ({ ...resolved, body: memoryIDs })),
     );
   }
 
