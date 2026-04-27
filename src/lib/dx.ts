@@ -76,13 +76,7 @@ export interface MemoryCreateInput
   extends MemoryCommonInput,
     Pick<
       MemoryCreateParams,
-      | 'content_parts'
-      | 'contents'
-      | 'engram_type'
-      | 'name'
-      | 'snapshot'
-      | 'speaker_id'
-      | 'speaker_name'
+      'content_parts' | 'contents' | 'engram_type' | 'name' | 'snapshot' | 'speaker_id' | 'speaker_name'
     > {
   memory_id?: undefined | null;
 }
