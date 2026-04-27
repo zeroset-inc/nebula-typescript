@@ -1528,6 +1528,14 @@ export namespace MemoryCreateParams {
      * Optional message-level metadata
      */
     metadata?: { [key: string]: unknown } | null;
+
+    /**
+     * Semantic timestamp for when the message was authored. Drives chunk timestamps,
+     * the extraction LLM's temporal anchor, and episodic grouping. Without it,
+     * relative phrases ('this morning') resolve against ingestion wall-clock and
+     * episodes collapse.
+     */
+    timestamp?: string | null;
   }
 
   export namespace Message {
@@ -1983,6 +1991,14 @@ export namespace MemoryAppendParams {
      * Optional SourceRole entity ID
      */
     source_role_id?: string | null;
+
+    /**
+     * Semantic timestamp for when the message was authored. Drives chunk timestamps,
+     * the extraction LLM's temporal anchor, and episodic grouping. Without it,
+     * relative phrases ('this morning') resolve against ingestion wall-clock and
+     * episodes collapse.
+     */
+    timestamp?: string | null;
   }
 
   export namespace Message {
@@ -2100,11 +2116,6 @@ export interface MemoryDeleteUploadParams {
 
 export interface MemorySearchParams {
   /**
-   * The search query to perform.
-   */
-  query: string;
-
-  /**
    * Optional list of collection UUIDs or names to scope the search.
    */
   collection_ids?: Array<string> | null;
@@ -2121,6 +2132,17 @@ export interface MemorySearchParams {
    * Optional filters to apply to the search.
    */
   filters?: { [key: string]: unknown } | null;
+
+  /**
+   * Pre-written NQL script. Executes directly without planner compilation. Mutually
+   * exclusive with `query`.
+   */
+  nql?: string | null;
+
+  /**
+   * Natural-language search query. Mutually exclusive with `nql`.
+   */
+  query?: string | null;
 
   /**
    * Advanced search settings for fine-tuning search behavior.
