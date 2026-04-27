@@ -1,4 +1,4 @@
 configured_endpoints: 25
-openapi_spec_url: https://storage.googleapis.com/stainless-sdk-openapi-specs/nebula%2Fnebula-49240cf1de14024b02b0152030bb2eaa907666a4149d127d44141d40aa953547.yml
-openapi_spec_hash: c91983cbc2fa70d5e31f4bd8aad88a06
+openapi_spec_url: https://storage.googleapis.com/stainless-sdk-openapi-specs/nebula%2Fnebula-2c67ce7be0127835288b63bbf8be4d8abc6eee72a5f1fb7a1a79db1a10e0506a.yml
+openapi_spec_hash: 568f2ba8b2e1e9a13148b5509b559bf6
 config_hash: f715da7094346dc33db182c8d37de0ac
