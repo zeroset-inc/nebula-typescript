@@ -319,6 +319,60 @@ describe('instantiate client', () => {
     );
   });
 
+  test('storeMemory append path forwards direct raw_text/messages/chunks fields', async () => {
+    const client = new Nebula({
+      apiKey: 'My API Key',
+      accessToken: 'My Access Token',
+    });
+    const append = jest
+      .spyOn(client.memories, 'append')
+      .mockResolvedValue({ results: { success: true } } as never);
+
+    await client.storeMemory({
+      collection_id: 'collection-123',
+      memory_id: 'memory-123',
+      raw_text: 'direct raw_text payload',
+      metadata: { source: 'unit-test' },
+    });
+    expect(append).toHaveBeenLastCalledWith(
+      'memory-123',
+      expect.objectContaining({
+        collection_id: 'collection-123',
+        raw_text: 'direct raw_text payload',
+        metadata: { source: 'unit-test' },
+      }),
+      undefined,
+    );
+
+    await client.storeMemory({
+      collection_id: 'collection-123',
+      memory_id: 'memory-456',
+      chunks: ['chunk a', 'chunk b'],
+    });
+    expect(append).toHaveBeenLastCalledWith(
+      'memory-456',
+      expect.objectContaining({
+        collection_id: 'collection-123',
+        chunks: ['chunk a', 'chunk b'],
+      }),
+      undefined,
+    );
+
+    await client.storeMemory({
+      collection_id: 'collection-123',
+      memory_id: 'memory-789',
+      messages: [{ role: 'user', content: 'hi' }],
+    });
+    expect(append).toHaveBeenLastCalledWith(
+      'memory-789',
+      expect.objectContaining({
+        collection_id: 'collection-123',
+        messages: [{ role: 'user', content: 'hi' }],
+      }),
+      undefined,
+    );
+  });
+
   test('storeMemory append path preserves camelCase collectionId alias', async () => {
     const client = new Nebula({
       apiKey: 'My API Key',

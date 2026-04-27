@@ -49,7 +49,7 @@ import { path } from '../internal/utils/path';
 type ResultsOf<T> = T extends { results: infer R } ? R : T;
 type MemoryCreateResult = MemoryCreateResponse['results'];
 type StoredMemoryResult = string | MemoryCreateResult;
-type SnapshotMemoryInput = MemoryInput & { snapshot: NonNullable<MemoryCreateParams['snapshot']> };
+type SnapshotMemoryInput = MemoryCreateInput & { snapshot: NonNullable<MemoryCreateParams['snapshot']> };
 type NonSnapshotMemoryInput = MemoryInput & { snapshot?: null | undefined };
 type RequestPath = `/${string}` | `http://${string}` | `https://${string}`;
 type CompatClientOptions = ClientOptions & {
@@ -60,13 +60,34 @@ type CompatClientOptions = ClientOptions & {
   bearer_token?: string | null;
 };
 
-export interface MemoryInput extends Omit<MemoryCreateParams, 'collection_id' | 'raw_text'> {
+export interface MemoryCommonInput {
   collection_id?: string | null;
   collectionId?: string | null;
   content?: string | MemoryCreateParams['content_parts'];
   raw_text?: string | null;
-  memory_id?: string | null;
+  chunks?: Array<string> | null;
+  messages?: MemoryCreateParams['messages'];
+  metadata?: { [key: string]: unknown } | null;
+  ingestion_config?: MemoryCreateParams['ingestion_config'];
+  ingestion_mode?: MemoryCreateParams['ingestion_mode'];
 }
+
+export interface MemoryCreateInput
+  extends MemoryCommonInput,
+    Pick<
+      MemoryCreateParams,
+      'content_parts' | 'contents' | 'engram_type' | 'name' | 'snapshot' | 'speaker_id' | 'speaker_name'
+    > {
+  memory_id?: undefined | null;
+}
+
+export interface MemoryAppendInput extends Omit<MemoryCommonInput, 'ingestion_mode' | 'messages'> {
+  memory_id: string;
+  ingestion_mode?: MemoryAppendParams['ingestion_mode'];
+  messages?: MemoryAppendParams['messages'];
+}
+
+export type MemoryInput = MemoryCreateInput | MemoryAppendInput;
 
 export class Nebula extends GeneratedNebula {
   constructor(options: CompatClientOptions = {}) {
@@ -85,9 +106,9 @@ export class Nebula extends GeneratedNebula {
   async storeMemory(memory: NonSnapshotMemoryInput, options?: RequestOptions): Promise<string>;
   async storeMemory(memory: MemoryInput, options?: RequestOptions): Promise<StoredMemoryResult>;
   async storeMemory(memory: MemoryInput, options?: RequestOptions): Promise<StoredMemoryResult> {
-    if (memory.memory_id) {
-      const { memory_id: memoryID, ...appendMemory } = memory;
-      await this.memories.append(memoryID, toMemoryAppendParams(appendMemory), options);
+    if (memory.memory_id != null) {
+      const memoryID = memory.memory_id;
+      await this.memories.append(memoryID, toMemoryAppendParams(memory), options);
       return memoryID;
     }
 
@@ -338,16 +359,16 @@ function looksLikeNebulaAPIKey(token: string): boolean {
   );
 }
 
-function toMemoryCreateParams(memory: MemoryInput): MemoryCreateParams {
+function toMemoryCreateParams(memory: MemoryCreateInput): MemoryCreateParams {
   const collectionID = memory.collection_id ?? memory.collectionId;
   const { collectionId: _collectionId, content, memory_id: _memoryID, ...rest } = memory;
-  const params: MemoryCreateParams = { ...rest };
+  const params = { ...rest } as MemoryCreateParams;
 
   if (collectionID !== undefined) {
     params.collection_id = collectionID;
   }
 
-  if (content !== undefined) {
+  if (content != null) {
     if (typeof content === 'string') {
       params.raw_text = content;
     } else {
@@ -362,19 +383,23 @@ function toMemoryCreateParams(memory: MemoryInput): MemoryCreateParams {
   return params;
 }
 
-function toMemoryAppendParams(memory: MemoryInput): MemoryAppendParams {
+function toMemoryAppendParams(memory: MemoryAppendInput): MemoryAppendParams {
   const collectionID = memory.collection_id ?? memory.collectionId;
   if (!collectionID) {
     throw new Error('collection_id is required when appending to an existing memory');
   }
 
-  const { content } = memory;
+  const {
+    collection_id: _collectionID,
+    collectionId: _collectionId,
+    memory_id: _memoryID,
+    content,
+    ...rest
+  } = memory;
   const params: MemoryAppendParams = {
+    ...(rest as Omit<MemoryAppendParams, 'collection_id'>),
     collection_id: collectionID,
   };
-  if (memory.metadata !== undefined) params.metadata = memory.metadata;
-  if (memory.ingestion_config !== undefined) params.ingestion_config = memory.ingestion_config;
-  if (memory.ingestion_mode != null) params.ingestion_mode = memory.ingestion_mode;
 
   if (content != null) {
     if (typeof content === 'string') {
