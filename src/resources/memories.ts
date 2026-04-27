@@ -486,10 +486,6 @@ export namespace MemoryRetrieveResponse {
 
     size_in_bytes?: number | null;
 
-    summary?: string | null;
-
-    summary_embedding?: Array<number> | null;
-
     text?: string | null;
 
     title?: string | null;
@@ -600,10 +596,6 @@ export namespace MemoryUpdateResponse {
 
     size_in_bytes?: number | null;
 
-    summary?: string | null;
-
-    summary_embedding?: Array<number> | null;
-
     text?: string | null;
 
     title?: string | null;
@@ -712,10 +704,6 @@ export namespace MemoryListResponse {
     search_ready_seq?: number | null;
 
     size_in_bytes?: number | null;
-
-    summary?: string | null;
-
-    summary_embedding?: Array<number> | null;
 
     text?: string | null;
 
@@ -934,9 +922,6 @@ export namespace MemorySearchResponse {
      *
      * 4. **Sources (episodic layer)**: The raw source material that grounds the
      *    structured knowledge in actual moments/quotes.
-     *
-     * The RecallFocus weights determine how much emphasis each layer gets in filtering
-     * and presentation, but all layers are always available.
      */
     results: NebulaResultsMemoryRecall.Results;
   }
@@ -959,9 +944,6 @@ export namespace MemorySearchResponse {
      *
      * 4. **Sources (episodic layer)**: The raw source material that grounds the
      *    structured knowledge in actual moments/quotes.
-     *
-     * The RecallFocus weights determine how much emphasis each layer gets in filtering
-     * and presentation, but all layers are always available.
      */
     export interface Results {
       query: string;
@@ -1475,14 +1457,6 @@ export namespace MemoryCreateParams {
 
     chunking_strategy?: string;
 
-    chunks_for_engram_summary?: number;
-
-    engram_summary_max_length?: number;
-
-    engram_summary_system_prompt?: string;
-
-    engram_summary_task_prompt?: string;
-
     excluded_parsers?: Array<string>;
 
     extra_parsers?: { [key: string]: unknown };
@@ -1492,10 +1466,6 @@ export namespace MemoryCreateParams {
     parser_overrides?: { [key: string]: string };
 
     provider?: string;
-
-    single_chunk_summary_threshold?: number;
-
-    skip_engram_summary?: boolean;
 
     vlm?: string | null;
 
@@ -1843,11 +1813,6 @@ export interface MemoryListParams {
   ids?: Array<string>;
 
   /**
-   * Specifies whether or not to include embeddings of each engram summary.
-   */
-  include_summary_embeddings?: boolean;
-
-  /**
    * Specifies a limit on the number of objects to return, ranging between 1 and 100.
    * Defaults to 100.
    */
@@ -1940,14 +1905,6 @@ export namespace MemoryAppendParams {
 
     chunking_strategy?: string;
 
-    chunks_for_engram_summary?: number;
-
-    engram_summary_max_length?: number;
-
-    engram_summary_system_prompt?: string;
-
-    engram_summary_task_prompt?: string;
-
     excluded_parsers?: Array<string>;
 
     extra_parsers?: { [key: string]: unknown };
@@ -1957,10 +1914,6 @@ export namespace MemoryAppendParams {
     parser_overrides?: { [key: string]: string };
 
     provider?: string;
-
-    single_chunk_summary_threshold?: number;
-
-    skip_engram_summary?: boolean;
 
     vlm?: string | null;
 
