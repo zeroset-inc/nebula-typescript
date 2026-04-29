@@ -961,6 +961,8 @@ export namespace MemorySearchResponse {
       sources?: Array<Results.Source>;
 
       total_traversal_time_ms?: number | null;
+
+      workflows?: Array<Results.Workflow>;
     }
 
     export namespace Results {
@@ -1054,11 +1056,10 @@ export namespace MemorySearchResponse {
       }
 
       /**
-       * A procedure (user preference) activated during memory traversal.
+       * A procedure-like memory activated during memory traversal.
        *
-       * Procedures are prescriptive -- they describe what the user prefers, likes,
-       * dislikes, or habitually does. Distinct from facts which are descriptive
-       * assertions.
+       * This includes preference procedures, atomic traces, and trace-derived
+       * strategies. Distinct from facts which are descriptive assertions.
        */
       export interface Procedural {
         id: string;
@@ -1223,6 +1224,130 @@ export namespace MemorySearchResponse {
           row_indices?: Array<number> | null;
 
           table_name?: string | null;
+        }
+      }
+
+      /**
+       * A workflow template activated during memory traversal.
+       *
+       * Workflows are the most structured form of procedure: ordered step sequences
+       * derived from Stage 2B causal subgraphs, clustered by taxonomy-triple backbone
+       * signature, and canonicalized via LLM-backed template induction. They answer
+       * "walk me through how I do X" and "what comes after step Y" queries, as opposed
+       * to ActivatedProcedure which answers "what are my preferences about X".
+       */
+      export interface Workflow {
+        id: string;
+
+        goal: string;
+
+        name: string;
+
+        activation_score?: number;
+
+        active_instance_count?: number;
+
+        backbone_signature_hash?: string | null;
+
+        branches?: Array<{ [key: string]: unknown }>;
+
+        confidence?: number;
+
+        current_step_index?: number | null;
+
+        instance_count?: number;
+
+        last_observed_at?: string | null;
+
+        metadata?: { [key: string]: unknown } | null;
+
+        /**
+         * A single canonical step inside an activated workflow template.
+         *
+         * Rich context fields (how_this_works, typical_entities, typical_tools,
+         * causes_next_because) are populated by the template inducer and carry forward the
+         * observational detail from the instances that built this template. They exist so
+         * an agent can understand _how_ a step works, _what tools are used_, and _why_ it
+         * causes the next step — not just _what_ the step is.
+         */
+        predicted_next_step?: Workflow.PredictedNextStep | null;
+
+        steps?: Array<Workflow.Step>;
+
+        taxonomy_version?: number;
+
+        variable_slots?: { [key: string]: unknown };
+      }
+
+      export namespace Workflow {
+        /**
+         * A single canonical step inside an activated workflow template.
+         *
+         * Rich context fields (how_this_works, typical_entities, typical_tools,
+         * causes_next_because) are populated by the template inducer and carry forward the
+         * observational detail from the instances that built this template. They exist so
+         * an agent can understand _how_ a step works, _what tools are used_, and _why_ it
+         * causes the next step — not just _what_ the step is.
+         */
+        export interface PredictedNextStep {
+          canonical_description: string;
+
+          goal_category: string;
+
+          index: number;
+
+          object_type: string;
+
+          verb_class: string;
+
+          causes_next_because?: string | null;
+
+          entity_roles?: Array<string>;
+
+          how_this_works?: string | null;
+
+          optional?: boolean;
+
+          typical_entities?: Array<string>;
+
+          typical_tools?: Array<string>;
+
+          variable_slots?: Array<string>;
+        }
+
+        /**
+         * A single canonical step inside an activated workflow template.
+         *
+         * Rich context fields (how_this_works, typical_entities, typical_tools,
+         * causes_next_because) are populated by the template inducer and carry forward the
+         * observational detail from the instances that built this template. They exist so
+         * an agent can understand _how_ a step works, _what tools are used_, and _why_ it
+         * causes the next step — not just _what_ the step is.
+         */
+        export interface Step {
+          canonical_description: string;
+
+          goal_category: string;
+
+          index: number;
+
+          object_type: string;
+
+          verb_class: string;
+
+          causes_next_because?: string | null;
+
+          entity_roles?: Array<string>;
+
+          how_this_works?: string | null;
+
+          optional?: boolean;
+
+          typical_entities?: Array<string>;
+
+          typical_tools?: Array<string>;
+
+          variable_slots?: Array<string>;
         }
       }
     }
