@@ -1,0 +1,54 @@
+{
+  "dxt_version": "0.2",
+  "name": "@nebula-ai/sdk-mcp",
+  "version": "1.3.0",
+  "description": "The official MCP Server for the Nebula API",
+  "author": {
+    "name": "Nebula",
+    "email": "support@trynebula.ai"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nebula-agi/nebula-typescript.git"
+  },
+  "homepage": "https://github.com/nebula-agi/nebula-typescript/tree/main/packages/mcp-server#readme",
+  "documentation": "https://docs.trynebula.ai",
+  "server": {
+    "type": "node",
+    "entry_point": "index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": [
+        "${__dirname}/index.js"
+      ],
+      "env": {
+        "NEBULA_API_KEY": "${user_config.NEBULA_API_KEY}",
+        "NEBULA_BEARER_TOKEN": "${user_config.NEBULA_BEARER_TOKEN}"
+      }
+    }
+  },
+  "user_config": {
+    "NEBULA_API_KEY": {
+      "title": "api_key",
+      "description": "",
+      "required": false,
+      "type": "string"
+    },
+    "NEBULA_BEARER_TOKEN": {
+      "title": "access_token",
+      "description": "",
+      "required": false,
+      "type": "string"
+    }
+  },
+  "tools": [],
+  "tools_generated": true,
+  "compatibility": {
+    "runtimes": {
+      "node": ">=18.0.0"
+    }
+  },
+  "keywords": [
+    "api"
+  ]
+}
