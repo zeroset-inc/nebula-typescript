@@ -1946,8 +1946,8 @@ export interface MemoryListParams {
   ids?: Array<string>;
 
   /**
-   * Specifies a limit on the number of objects to return, ranging between 1 and 100.
-   * Defaults to 100.
+   * Specifies a limit on the number of objects to return, ranging between 1
+   * and 1000. Defaults to 100.
    */
   limit?: number;
 
