@@ -199,6 +199,17 @@ export namespace MemoryCreateResponse {
 
       message: string;
 
+      /**
+       * WAL committed sequence number from this placeholder write, for read-your-writes
+       * assertions on the next collection-scoped list call. A non-zero value indicates
+       * the request appended a WAL entry; pass it back as `min_applied_wal_seq` on GET
+       * /v1/memories to wait for the entry's visibility before serving. Zero on
+       * idempotent observe-existing replays and on multi-shard collections (per-shard
+       * scalars are not comparable across shards) — clients should treat zero as 'no
+       * assertion to make.' Single-shard collections only.
+       */
+      applied_wal_seq?: number;
+
       engram_id?: string | null;
 
       memory_id?: string | null;
@@ -610,10 +621,28 @@ export namespace MemoryUpdateResponse {
   }
 }
 
+/**
+ * Paginated /v1/memories list response.
+ *
+ * Memories-specific subclass that adds `applied_wal_seq` without leaking the field
+ * into every paginated engram-list endpoint's wire format. The plain alias
+ * :class:`WrappedCollectionEngramsResponse` is the right shape for sibling
+ * endpoints (e.g. /collections/{id}/ engrams) where the seq isn't surfaced.
+ */
 export interface MemoryListResponse {
   results: Array<MemoryListResponse.Result>;
 
   total_entries: number;
+
+  /**
+   * Highest WAL committed sequence number reflected in this response. Non-zero only
+   * when the request was served via the WAL-tail fast path (collection-scoped
+   * requests on shards with WAL-tail compaction enabled). Zero on the legacy overlay
+   * path; clients should treat zero as 'the served path does not honor RYW
+   * assertions on this shard.' Pair with `min_applied_wal_seq` on the request to
+   * assert read-your-writes against a value returned by a prior memory-create call.
+   */
+  applied_wal_seq?: number;
 }
 
 export namespace MemoryListResponse {
@@ -1956,6 +1985,18 @@ export interface MemoryListParams {
    * "playground"}}'
    */
   metadata_filters?: string | null;
+
+  /**
+   * Read-your-writes assertion: the WAL-tail overlay path waits for at least this
+   * seq to be applied before serving (or returns 503 Unavailable on timeout).
+   * REQUIRES exactly one collection_ids entry — without a collection scope the
+   * request returns 422 (the per-WAL-shard scalar applied_wal_seq is meaningless
+   * across collections). When the served shard has not been migrated to
+   * wal_compaction_enabled, the field is accepted but the served path is the legacy
+   * overlay (the assertion has no effect — the response's applied_wal_seq will be
+   * 0). Pass back the value the matching upload response surfaced.
+   */
+  min_applied_wal_seq?: number | null;
 
   /**
    * Specifies the number of objects to skip. Defaults to 0.
