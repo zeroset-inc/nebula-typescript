@@ -142,6 +142,8 @@ export namespace CollectionCreateResponse {
 
     rental_price_monthly_usd?: string | null;
 
+    workflows_enabled?: boolean;
+
     workspace_id?: string | null;
   }
 }
@@ -202,6 +204,8 @@ export namespace CollectionRetrieveResponse {
 
     rental_price_monthly_usd?: string | null;
 
+    workflows_enabled?: boolean;
+
     workspace_id?: string | null;
   }
 }
@@ -261,6 +265,8 @@ export namespace CollectionUpdateResponse {
     purchase_price_usd?: string | null;
 
     rental_price_monthly_usd?: string | null;
+
+    workflows_enabled?: boolean;
 
     workspace_id?: string | null;
   }
@@ -323,6 +329,8 @@ export namespace CollectionListResponse {
     purchase_price_usd?: string | null;
 
     rental_price_monthly_usd?: string | null;
+
+    workflows_enabled?: boolean;
 
     workspace_id?: string | null;
   }
@@ -394,6 +402,8 @@ export namespace CollectionRetrieveByNameResponse {
 
     rental_price_monthly_usd?: string | null;
 
+    workflows_enabled?: boolean;
+
     workspace_id?: string | null;
   }
 }
@@ -402,6 +412,8 @@ export interface CollectionCreateParams {
   name: string;
 
   description?: string | null;
+
+  workflows_enabled?: boolean;
 
   workspace_id?: string | null;
 }
@@ -414,6 +426,8 @@ export interface CollectionUpdateParams {
   generate_description?: boolean;
 
   name?: string | null;
+
+  workflows_enabled?: boolean | null;
 }
 
 export interface CollectionListParams {
