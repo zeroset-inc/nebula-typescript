@@ -76,7 +76,7 @@ export interface MemoryCreateInput
   extends MemoryCommonInput,
     Pick<
       MemoryCreateParams,
-      'content_parts' | 'contents' | 'kind' | 'name' | 'snapshot' | 'speaker_id' | 'speaker_name'
+      'content_parts' | 'contents' | 'name' | 'snapshot' | 'speaker_id' | 'speaker_name'
     > {
   memory_id?: undefined | null;
 }
@@ -375,14 +375,6 @@ function toMemoryCreateParams(memory: MemoryCreateInput): MemoryCreateParams {
       params.content_parts = content;
     }
   }
-
-  // ``kind`` is server-inferred when omitted —
-  // ``CreateMemoryRequest.validate_snapshot_or_collection`` on the API
-  // side sets ``kind=conversation`` if ``messages`` is present, else
-  // ``kind=document``. The DX layer used to replicate that inference
-  // here for typed-payload reasons; the server validator now owns it
-  // and we drop the duplicate. Callers can still pass an explicit
-  // ``kind`` via ``MemoryCreateInput`` to override.
 
   return params;
 }
