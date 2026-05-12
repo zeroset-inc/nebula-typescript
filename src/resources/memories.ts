@@ -10,7 +10,7 @@ export class Memories extends APIResource {
    * Create a new memory (conversation or document) using clean JSON body.
    *
    * - Use `collection_id` (UUID)
-   * - `engram_type` is optional and inferred from payload shape:
+   * - `kind` is optional and inferred from payload shape:
    *   - If `messages` present -> conversation
    *   - Otherwise -> document
    * - For conversations: provide `messages` array
@@ -403,72 +403,73 @@ export namespace MemoryCreateResponse {
 
 export interface MemoryRetrieveResponse {
   /**
-   * Base class for engram information handling.
+   * The unified engram model: typed kind + per-kind substructure.
+   *
+   * `kind` is the canonical discriminator. The per-kind `conversation` and
+   * `document` substructures hold typed fields known to the platform; `metadata` is
+   * reserved for user-supplied annotations and must never carry platform-written
+   * discriminators or routing markers.
+   *
+   * Construction enforces shape consistency via a model validator:
+   * `kind=conversation` must not carry document fields, `kind=document` must carry a
+   * `DocumentFields` substructure (`document_type` is required), and vice versa.
    */
   results: MemoryRetrieveResponse.Results;
 }
 
 export namespace MemoryRetrieveResponse {
   /**
-   * Base class for engram information handling.
+   * The unified engram model: typed kind + per-kind substructure.
+   *
+   * `kind` is the canonical discriminator. The per-kind `conversation` and
+   * `document` substructures hold typed fields known to the platform; `metadata` is
+   * reserved for user-supplied annotations and must never carry platform-written
+   * discriminators or routing markers.
+   *
+   * Construction enforces shape consistency via a model validator:
+   * `kind=conversation` must not carry document fields, `kind=document` must carry a
+   * `DocumentFields` substructure (`document_type` is required), and vice versa.
    */
   export interface Results {
-    id: string;
-
-    collection_ids: Array<string>;
-
     /**
-     * Types of file formats that can be stored as engrams.
+     * The canonical engram discriminator.
+     *
+     * A single source of truth: every engram is either a `document` or a
+     * `conversation`. The kind drives which typed substructure (`Engram.document` /
+     * `Engram.conversation`) carries kind-specific fields. The free-form `metadata`
+     * dict is reserved for user-supplied annotations and is never inspected for
+     * routing.
      */
-    document_type:
-      | 'mp3'
-      | 'csv'
-      | 'eml'
-      | 'msg'
-      | 'p7s'
-      | 'epub'
-      | 'xls'
-      | 'xlsx'
-      | 'html'
-      | 'htm'
-      | 'bmp'
-      | 'heic'
-      | 'jpeg'
-      | 'png'
-      | 'tiff'
-      | 'jpg'
-      | 'svg'
-      | 'md'
-      | 'org'
-      | 'odt'
-      | 'pdf'
-      | 'txt'
-      | 'json'
-      | 'ppt'
-      | 'pptx'
-      | 'rst'
-      | 'rtf'
-      | 'tsv'
-      | 'gif'
-      | 'doc'
-      | 'docx'
-      | 'py'
-      | 'js'
-      | 'ts'
-      | 'css';
-
-    /**
-     * Types of engrams - broader categories that include documents and conversations.
-     */
-    engram_type: 'document' | 'conversation';
-
-    metadata: { [key: string]: unknown };
+    kind: 'document' | 'conversation';
 
     owner_id: string;
 
+    id?: string;
+
     chunks?: Array<unknown> | null;
 
+    collection_ids?: Array<string>;
+
+    /**
+     * Conversation-specific typed fields.
+     *
+     * Present iff `Engram.kind == CONVERSATION`. Holds the platform-written fields
+     * that previously lived on `metadata` (`conversation_id`, `episode_type`) so they
+     * have a typed home and are not co-mingled with user-supplied metadata.
+     */
+    conversation?: Results.Conversation | null;
+
     created_at?: string | null;
+
+    /**
+     * Document-specific typed fields.
+     *
+     * Present iff `Engram.kind == DOCUMENT`. `document_type` is required because every
+     * document needs an extension/format classifier for parsing. `original_extension`
+     * records the source filename's extension when it differs from the canonical
+     * `document_type` (e.g. user uploaded `.JPG` normalized to `jpeg`).
+     */
+    document?: Results.Document | null;
 
     /**
      * Status of graph creation per document.
@@ -492,6 +493,8 @@ export namespace MemoryRetrieveResponse {
       | 'success';
 
     merkle_root?: string | null;
+
+    metadata?: { [key: string]: unknown };
 
     search_ready_seq?: number | null;
 
@@ -509,76 +512,144 @@ export namespace MemoryRetrieveResponse {
 
     workflow_run_id?: string | null;
   }
+
+  export namespace Results {
+    /**
+     * Conversation-specific typed fields.
+     *
+     * Present iff `Engram.kind == CONVERSATION`. Holds the platform-written fields
+     * that previously lived on `metadata` (`conversation_id`, `episode_type`) so they
+     * have a typed home and are not co-mingled with user-supplied metadata.
+     */
+    export interface Conversation {
+      conversation_id?: string | null;
+
+      episode_type?: string | null;
+    }
+
+    /**
+     * Document-specific typed fields.
+     *
+     * Present iff `Engram.kind == DOCUMENT`. `document_type` is required because every
+     * document needs an extension/format classifier for parsing. `original_extension`
+     * records the source filename's extension when it differs from the canonical
+     * `document_type` (e.g. user uploaded `.JPG` normalized to `jpeg`).
+     */
+    export interface Document {
+      /**
+       * Types of file formats that can be stored as engrams.
+       */
+      document_type:
+        | 'mp3'
+        | 'csv'
+        | 'eml'
+        | 'msg'
+        | 'p7s'
+        | 'epub'
+        | 'xls'
+        | 'xlsx'
+        | 'html'
+        | 'htm'
+        | 'bmp'
+        | 'heic'
+        | 'jpeg'
+        | 'png'
+        | 'tiff'
+        | 'jpg'
+        | 'svg'
+        | 'md'
+        | 'org'
+        | 'odt'
+        | 'pdf'
+        | 'txt'
+        | 'json'
+        | 'ppt'
+        | 'pptx'
+        | 'rst'
+        | 'rtf'
+        | 'tsv'
+        | 'gif'
+        | 'doc'
+        | 'docx'
+        | 'py'
+        | 'js'
+        | 'ts'
+        | 'css';
+
+      original_extension?: string | null;
+    }
+  }
 }
 
 export interface MemoryUpdateResponse {
   /**
-   * Base class for engram information handling.
+   * The unified engram model: typed kind + per-kind substructure.
+   *
+   * `kind` is the canonical discriminator. The per-kind `conversation` and
+   * `document` substructures hold typed fields known to the platform; `metadata` is
+   * reserved for user-supplied annotations and must never carry platform-written
+   * discriminators or routing markers.
+   *
+   * Construction enforces shape consistency via a model validator:
+   * `kind=conversation` must not carry document fields, `kind=document` must carry a
+   * `DocumentFields` substructure (`document_type` is required), and vice versa.
    */
   results: MemoryUpdateResponse.Results;
 }
 
 export namespace MemoryUpdateResponse {
   /**
-   * Base class for engram information handling.
+   * The unified engram model: typed kind + per-kind substructure.
+   *
+   * `kind` is the canonical discriminator. The per-kind `conversation` and
+   * `document` substructures hold typed fields known to the platform; `metadata` is
+   * reserved for user-supplied annotations and must never carry platform-written
+   * discriminators or routing markers.
+   *
+   * Construction enforces shape consistency via a model validator:
+   * `kind=conversation` must not carry document fields, `kind=document` must carry a
+   * `DocumentFields` substructure (`document_type` is required), and vice versa.
    */
   export interface Results {
-    id: string;
-
-    collection_ids: Array<string>;
-
     /**
-     * Types of file formats that can be stored as engrams.
+     * The canonical engram discriminator.
+     *
+     * A single source of truth: every engram is either a `document` or a
+     * `conversation`. The kind drives which typed substructure (`Engram.document` /
+     * `Engram.conversation`) carries kind-specific fields. The free-form `metadata`
+     * dict is reserved for user-supplied annotations and is never inspected for
+     * routing.
      */
-    document_type:
-      | 'mp3'
-      | 'csv'
-      | 'eml'
-      | 'msg'
-      | 'p7s'
-      | 'epub'
-      | 'xls'
-      | 'xlsx'
-      | 'html'
-      | 'htm'
-      | 'bmp'
-      | 'heic'
-      | 'jpeg'
-      | 'png'
-      | 'tiff'
-      | 'jpg'
-      | 'svg'
-      | 'md'
-      | 'org'
-      | 'odt'
-      | 'pdf'
-      | 'txt'
-      | 'json'
-      | 'ppt'
-      | 'pptx'
-      | 'rst'
-      | 'rtf'
-      | 'tsv'
-      | 'gif'
-      | 'doc'
-      | 'docx'
-      | 'py'
-      | 'js'
-      | 'ts'
-      | 'css';
-
-    /**
-     * Types of engrams - broader categories that include documents and conversations.
-     */
-    engram_type: 'document' | 'conversation';
-
-    metadata: { [key: string]: unknown };
+    kind: 'document' | 'conversation';
 
     owner_id: string;
 
+    id?: string;
+
     chunks?: Array<unknown> | null;
 
+    collection_ids?: Array<string>;
+
+    /**
+     * Conversation-specific typed fields.
+     *
+     * Present iff `Engram.kind == CONVERSATION`. Holds the platform-written fields
+     * that previously lived on `metadata` (`conversation_id`, `episode_type`) so they
+     * have a typed home and are not co-mingled with user-supplied metadata.
+     */
+    conversation?: Results.Conversation | null;
+
     created_at?: string | null;
+
+    /**
+     * Document-specific typed fields.
+     *
+     * Present iff `Engram.kind == DOCUMENT`. `document_type` is required because every
+     * document needs an extension/format classifier for parsing. `original_extension`
+     * records the source filename's extension when it differs from the canonical
+     * `document_type` (e.g. user uploaded `.JPG` normalized to `jpeg`).
+     */
+    document?: Results.Document | null;
 
     /**
      * Status of graph creation per document.
@@ -603,6 +674,8 @@ export namespace MemoryUpdateResponse {
 
     merkle_root?: string | null;
 
+    metadata?: { [key: string]: unknown };
+
     search_ready_seq?: number | null;
 
     size_in_bytes?: number | null;
@@ -618,6 +691,73 @@ export namespace MemoryUpdateResponse {
     version?: string | null;
 
     workflow_run_id?: string | null;
+  }
+
+  export namespace Results {
+    /**
+     * Conversation-specific typed fields.
+     *
+     * Present iff `Engram.kind == CONVERSATION`. Holds the platform-written fields
+     * that previously lived on `metadata` (`conversation_id`, `episode_type`) so they
+     * have a typed home and are not co-mingled with user-supplied metadata.
+     */
+    export interface Conversation {
+      conversation_id?: string | null;
+
+      episode_type?: string | null;
+    }
+
+    /**
+     * Document-specific typed fields.
+     *
+     * Present iff `Engram.kind == DOCUMENT`. `document_type` is required because every
+     * document needs an extension/format classifier for parsing. `original_extension`
+     * records the source filename's extension when it differs from the canonical
+     * `document_type` (e.g. user uploaded `.JPG` normalized to `jpeg`).
+     */
+    export interface Document {
+      /**
+       * Types of file formats that can be stored as engrams.
+       */
+      document_type:
+        | 'mp3'
+        | 'csv'
+        | 'eml'
+        | 'msg'
+        | 'p7s'
+        | 'epub'
+        | 'xls'
+        | 'xlsx'
+        | 'html'
+        | 'htm'
+        | 'bmp'
+        | 'heic'
+        | 'jpeg'
+        | 'png'
+        | 'tiff'
+        | 'jpg'
+        | 'svg'
+        | 'md'
+        | 'org'
+        | 'odt'
+        | 'pdf'
+        | 'txt'
+        | 'json'
+        | 'ppt'
+        | 'pptx'
+        | 'rst'
+        | 'rtf'
+        | 'tsv'
+        | 'gif'
+        | 'doc'
+        | 'docx'
+        | 'py'
+        | 'js'
+        | 'ts'
+        | 'css';
+
+      original_extension?: string | null;
+    }
   }
 }
 
@@ -647,65 +787,57 @@ export interface MemoryListResponse {
 
 export namespace MemoryListResponse {
   /**
-   * Base class for engram information handling.
+   * The unified engram model: typed kind + per-kind substructure.
+   *
+   * `kind` is the canonical discriminator. The per-kind `conversation` and
+   * `document` substructures hold typed fields known to the platform; `metadata` is
+   * reserved for user-supplied annotations and must never carry platform-written
+   * discriminators or routing markers.
+   *
+   * Construction enforces shape consistency via a model validator:
+   * `kind=conversation` must not carry document fields, `kind=document` must carry a
+   * `DocumentFields` substructure (`document_type` is required), and vice versa.
    */
   export interface Result {
-    id: string;
-
-    collection_ids: Array<string>;
-
     /**
-     * Types of file formats that can be stored as engrams.
+     * The canonical engram discriminator.
+     *
+     * A single source of truth: every engram is either a `document` or a
+     * `conversation`. The kind drives which typed substructure (`Engram.document` /
+     * `Engram.conversation`) carries kind-specific fields. The free-form `metadata`
+     * dict is reserved for user-supplied annotations and is never inspected for
+     * routing.
      */
-    document_type:
-      | 'mp3'
-      | 'csv'
-      | 'eml'
-      | 'msg'
-      | 'p7s'
-      | 'epub'
-      | 'xls'
-      | 'xlsx'
-      | 'html'
-      | 'htm'
-      | 'bmp'
-      | 'heic'
-      | 'jpeg'
-      | 'png'
-      | 'tiff'
-      | 'jpg'
-      | 'svg'
-      | 'md'
-      | 'org'
-      | 'odt'
-      | 'pdf'
-      | 'txt'
-      | 'json'
-      | 'ppt'
-      | 'pptx'
-      | 'rst'
-      | 'rtf'
-      | 'tsv'
-      | 'gif'
-      | 'doc'
-      | 'docx'
-      | 'py'
-      | 'js'
-      | 'ts'
-      | 'css';
-
-    /**
-     * Types of engrams - broader categories that include documents and conversations.
-     */
-    engram_type: 'document' | 'conversation';
-
-    metadata: { [key: string]: unknown };
+    kind: 'document' | 'conversation';
 
     owner_id: string;
 
+    id?: string;
+
     chunks?: Array<unknown> | null;
 
+    collection_ids?: Array<string>;
+
+    /**
+     * Conversation-specific typed fields.
+     *
+     * Present iff `Engram.kind == CONVERSATION`. Holds the platform-written fields
+     * that previously lived on `metadata` (`conversation_id`, `episode_type`) so they
+     * have a typed home and are not co-mingled with user-supplied metadata.
+     */
+    conversation?: Result.Conversation | null;
+
     created_at?: string | null;
+
+    /**
+     * Document-specific typed fields.
+     *
+     * Present iff `Engram.kind == DOCUMENT`. `document_type` is required because every
+     * document needs an extension/format classifier for parsing. `original_extension`
+     * records the source filename's extension when it differs from the canonical
+     * `document_type` (e.g. user uploaded `.JPG` normalized to `jpeg`).
+     */
+    document?: Result.Document | null;
 
     /**
      * Status of graph creation per document.
@@ -730,6 +862,8 @@ export namespace MemoryListResponse {
 
     merkle_root?: string | null;
 
+    metadata?: { [key: string]: unknown };
+
     search_ready_seq?: number | null;
 
     size_in_bytes?: number | null;
@@ -745,6 +879,73 @@ export namespace MemoryListResponse {
     version?: string | null;
 
     workflow_run_id?: string | null;
+  }
+
+  export namespace Result {
+    /**
+     * Conversation-specific typed fields.
+     *
+     * Present iff `Engram.kind == CONVERSATION`. Holds the platform-written fields
+     * that previously lived on `metadata` (`conversation_id`, `episode_type`) so they
+     * have a typed home and are not co-mingled with user-supplied metadata.
+     */
+    export interface Conversation {
+      conversation_id?: string | null;
+
+      episode_type?: string | null;
+    }
+
+    /**
+     * Document-specific typed fields.
+     *
+     * Present iff `Engram.kind == DOCUMENT`. `document_type` is required because every
+     * document needs an extension/format classifier for parsing. `original_extension`
+     * records the source filename's extension when it differs from the canonical
+     * `document_type` (e.g. user uploaded `.JPG` normalized to `jpeg`).
+     */
+    export interface Document {
+      /**
+       * Types of file formats that can be stored as engrams.
+       */
+      document_type:
+        | 'mp3'
+        | 'csv'
+        | 'eml'
+        | 'msg'
+        | 'p7s'
+        | 'epub'
+        | 'xls'
+        | 'xlsx'
+        | 'html'
+        | 'htm'
+        | 'bmp'
+        | 'heic'
+        | 'jpeg'
+        | 'png'
+        | 'tiff'
+        | 'jpg'
+        | 'svg'
+        | 'md'
+        | 'org'
+        | 'odt'
+        | 'pdf'
+        | 'txt'
+        | 'json'
+        | 'ppt'
+        | 'pptx'
+        | 'rst'
+        | 'rtf'
+        | 'tsv'
+        | 'gif'
+        | 'doc'
+        | 'docx'
+        | 'py'
+        | 'js'
+        | 'ts'
+        | 'css';
+
+      original_extension?: string | null;
+    }
   }
 }
 
@@ -1431,7 +1632,7 @@ export namespace MemorySearchResponse {
 
 export interface MemoryCreateParams {
   /**
-   * Pre-chunked text for document type
+   * Pre-chunked text for document kind
    */
   chunks?: Array<string> | null;
 
@@ -1441,7 +1642,7 @@ export interface MemoryCreateParams {
   collection_id?: string | null;
 
   /**
-   * Multimodal content parts (text, images, audio, documents) for document type.
+   * Multimodal content parts (text, images, audio, documents) for document kind.
    */
   content_parts?: Array<
     | MemoryCreateParams.TextContentRequest
@@ -1453,11 +1654,6 @@ export interface MemoryCreateParams {
    * Batch content strings for snapshot mode
    */
   contents?: Array<string> | null;
-
-  /**
-   * Type of memory to create
-   */
-  engram_type?: 'document' | 'conversation';
 
   /**
    * Public ingestion config accepted by memory-ingestion endpoints.
@@ -1474,12 +1670,19 @@ export interface MemoryCreateParams {
   ingestion_mode?: 'hi-res' | 'ocr' | 'fast' | 'custom' | null;
 
   /**
-   * Messages for conversation type
+   * Engram discriminator: `document` or `conversation`. When omitted, `conversation`
+   * is inferred if `messages` is present; otherwise defaults to `document`.
+   */
+  kind?: 'document' | 'conversation';
+
+  /**
+   * Messages for conversation kind
    */
   messages?: Array<MemoryCreateParams.Message> | null;
 
   /**
-   * Metadata for the memory
+   * User-supplied metadata for the memory. Must not carry platform discriminators or
+   * routing markers — use the `kind` / `conversation` / `document` fields instead.
    */
   metadata?: { [key: string]: unknown } | null;
 
@@ -1489,7 +1692,7 @@ export interface MemoryCreateParams {
   name?: string | null;
 
   /**
-   * Raw text content for document type
+   * Raw text content for document kind
    */
   raw_text?: string | null;
 
