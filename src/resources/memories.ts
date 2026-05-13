@@ -1235,9 +1235,15 @@ export namespace MemorySearchResponse {
 
         evidence_ids?: Array<string>;
 
+        is_obligation?: boolean;
+
         member_semantic_ids?: Array<string>;
 
+        modality?: string | null;
+
         n_facts?: number;
+
+        resolved_at?: string | null;
 
         status?: string | null;
 
@@ -1316,7 +1322,7 @@ export namespace MemorySearchResponse {
       /**
        * A semantic item activated during memory traversal.
        *
-       * Represents a structured assertion (fact, inference, or task) that was found
+       * Represents a structured assertion (fact, inference, or episodic) that was found
        * relevant to the query. Links back to its entity and source utterances for
        * provenance.
        */
