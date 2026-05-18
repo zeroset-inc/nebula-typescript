@@ -20,7 +20,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "tsdown",
+    "build": "tsdown src/index.ts --format esm,cjs --dts --sourcemap --clean --out-dir dist --platform neutral --target es2022",
     "type-check": "tsc --noEmit",
     "test": "bun test",
     "prepack": "bun run build"
