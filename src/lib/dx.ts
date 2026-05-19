@@ -102,12 +102,33 @@ export class Nebula extends NebulaDX {
     return extractID(result);
   }
 
-  /** Bulk parallel version of storeMemory. */
-  storeMemories(
+  /**
+   * Bulk parallel version of storeMemory with a concurrency cap.
+   *
+   * Default 8 concurrent in-flight requests matches the Python DX's
+   * `asyncio.Semaphore(max_concurrency)` pattern. Use `maxConcurrency: 1`
+   * for strictly serial submission; higher values risk overwhelming the
+   * server when memories[] is large.
+   */
+  async storeMemories(
     memories: MemoryInput[],
-    options?: { signal?: AbortSignal }
+    options?: { signal?: AbortSignal; maxConcurrency?: number }
   ): Promise<(string | SnapshotEnvelopeOutput)[]> {
-    return Promise.all(memories.map((memory) => this.storeMemory(memory, options)));
+    const cap = Math.max(1, options?.maxConcurrency ?? 8);
+    const signal = options?.signal;
+    const results: (string | SnapshotEnvelopeOutput)[] = new Array(memories.length);
+    let nextIndex = 0;
+    const worker = async (): Promise<void> => {
+      while (true) {
+        const i = nextIndex++;
+        if (i >= memories.length) return;
+        results[i] = await this.storeMemory(memories[i], { signal });
+      }
+    };
+    await Promise.all(
+      Array.from({ length: Math.min(cap, memories.length) }, () => worker())
+    );
+    return results;
   }
 
   /**

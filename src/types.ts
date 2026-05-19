@@ -2110,6 +2110,11 @@ export interface components {
          * @description Cursor-paginated list of Engram entries. The wire envelope is ``{data, next_cursor, has_more}``.
          */
         PaginatedEngram: {
+            /**
+             * @description Highest WAL committed sequence number reflected in this response. Non-zero only when the request was served via the WAL-tail fast path. Pair with ``min_applied_wal_seq`` on the request for read-your-writes assertions.
+             * @default 0
+             */
+            applied_wal_seq: number;
             data: components["schemas"]["Engram"][];
             /** @description Whether another page is available after this one. */
             has_more: boolean;
@@ -2755,7 +2760,7 @@ export interface operations {
                     "application/json": components["schemas"]["PaginatedCollectionResponse"];
                 };
             };
-            /** @description Bad request */
+            /** @description Bad Request */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -2782,7 +2787,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Internal server error */
+            /** @description Internal Server Error */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -2831,7 +2836,7 @@ export interface operations {
                     "application/json": components["schemas"]["WrappedCollectionResponse"];
                 };
             };
-            /** @description Bad request */
+            /** @description Bad Request */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -2867,7 +2872,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Internal server error */
+            /** @description Internal Server Error */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -2918,7 +2923,7 @@ export interface operations {
                     "application/json": components["schemas"]["WrappedCollectionResponse"];
                 };
             };
-            /** @description Bad request */
+            /** @description Bad Request */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -2945,7 +2950,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Internal server error */
+            /** @description Internal Server Error */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -2993,7 +2998,7 @@ export interface operations {
                     "application/json": components["schemas"]["WrappedCollectionResponse"];
                 };
             };
-            /** @description Bad request */
+            /** @description Bad Request */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -3020,7 +3025,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Internal server error */
+            /** @description Internal Server Error */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -3072,7 +3077,7 @@ export interface operations {
                     "application/json": components["schemas"]["WrappedCollectionResponse"];
                 };
             };
-            /** @description Bad request */
+            /** @description Bad Request */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -3108,7 +3113,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Internal server error */
+            /** @description Internal Server Error */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -3147,7 +3152,7 @@ export interface operations {
                     "application/json": components["schemas"]["WrappedGenericBooleanResponse"];
                 };
             };
-            /** @description Bad request */
+            /** @description Bad Request */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -3183,7 +3188,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Internal server error */
+            /** @description Internal Server Error */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -3229,7 +3234,7 @@ export interface operations {
                     "application/json": components["schemas"]["WrappedListOfConnectorConnectionResponse"];
                 };
             };
-            /** @description Bad request */
+            /** @description Bad Request */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -3256,7 +3261,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Internal server error */
+            /** @description Internal Server Error */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -3292,7 +3297,7 @@ export interface operations {
                     "application/json": components["schemas"]["WrappedListOfStr"];
                 };
             };
-            /** @description Bad request */
+            /** @description Bad Request */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -3310,7 +3315,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Internal server error */
+            /** @description Internal Server Error */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -3354,7 +3359,7 @@ export interface operations {
                     "application/json": components["schemas"]["WrappedConnectorConnectionResponse"];
                 };
             };
-            /** @description Bad request */
+            /** @description Bad Request */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -3381,7 +3386,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Internal server error */
+            /** @description Internal Server Error */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -3421,7 +3426,7 @@ export interface operations {
                     "application/json": components["schemas"]["WrappedConnectorDisconnectResponse"];
                 };
             };
-            /** @description Bad request */
+            /** @description Bad Request */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -3457,7 +3462,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Internal server error */
+            /** @description Internal Server Error */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -3495,7 +3500,7 @@ export interface operations {
                     "application/json": components["schemas"]["WrappedConnectorSyncResponse"];
                 };
             };
-            /** @description Bad request */
+            /** @description Bad Request */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -3531,7 +3536,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Internal server error */
+            /** @description Internal Server Error */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -3574,7 +3579,7 @@ export interface operations {
                     "application/json": components["schemas"]["WrappedConnectorConnectResponse"];
                 };
             };
-            /** @description Bad request */
+            /** @description Bad Request */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -3610,7 +3615,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Internal server error */
+            /** @description Internal Server Error */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -3651,7 +3656,7 @@ export interface operations {
                     "application/json": components["schemas"]["WrappedSnapshotEnvelope"];
                 };
             };
-            /** @description Bad request */
+            /** @description Bad Request */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -3687,7 +3692,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Internal server error */
+            /** @description Internal Server Error */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -3727,7 +3732,7 @@ export interface operations {
                     "application/json": components["schemas"]["WrappedSnapshotImportResult"];
                 };
             };
-            /** @description Bad request */
+            /** @description Bad Request */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -3763,7 +3768,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Internal server error */
+            /** @description Internal Server Error */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -3799,7 +3804,7 @@ export interface operations {
                     "application/json": components["schemas"]["WrappedGenericMessageResponse"];
                 };
             };
-            /** @description Bad request */
+            /** @description Bad Request */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -3817,7 +3822,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Internal server error */
+            /** @description Internal Server Error */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -3891,7 +3896,7 @@ export interface operations {
                     "application/json": components["schemas"]["PaginatedEngram"];
                 };
             };
-            /** @description Bad request */
+            /** @description Bad Request */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -3918,7 +3923,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Internal server error */
+            /** @description Internal Server Error */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -3976,7 +3981,7 @@ export interface operations {
                     "application/json": components["schemas"]["MemoryCreateResponse"];
                 };
             };
-            /** @description Bad request */
+            /** @description Bad Request */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -4012,7 +4017,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Internal server error */
+            /** @description Internal Server Error */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -4052,7 +4057,7 @@ export interface operations {
                     "application/json": components["schemas"]["WrappedGenericBooleanResponse"] | components["schemas"]["BatchDeleteResponse"];
                 };
             };
-            /** @description Bad request */
+            /** @description Bad Request */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -4088,7 +4093,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Internal server error */
+            /** @description Internal Server Error */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -4128,7 +4133,7 @@ export interface operations {
                     "application/json": components["schemas"]["WrappedCompactMemoryRecallResponse"] | components["schemas"]["WrappedMemoryRecall"] | components["schemas"]["WrappedSnapshotSearchResult"];
                 };
             };
-            /** @description Bad request */
+            /** @description Bad Request */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -4164,7 +4169,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Internal server error */
+            /** @description Internal Server Error */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -4213,7 +4218,7 @@ export interface operations {
                     "application/json": components["schemas"]["WrappedPresignedUploadResponse"];
                 };
             };
-            /** @description Bad request */
+            /** @description Bad Request */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -4249,7 +4254,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Internal server error */
+            /** @description Internal Server Error */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -4288,7 +4293,7 @@ export interface operations {
                     "application/json": components["schemas"]["WrappedGenericMessageResponse"];
                 };
             };
-            /** @description Bad request */
+            /** @description Bad Request */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -4324,7 +4329,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Internal server error */
+            /** @description Internal Server Error */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -4362,7 +4367,7 @@ export interface operations {
                     "application/json": components["schemas"]["WorkflowRecallResponse"];
                 };
             };
-            /** @description Bad request */
+            /** @description Bad Request */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -4398,7 +4403,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Internal server error */
+            /** @description Internal Server Error */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -4455,7 +4460,7 @@ export interface operations {
                     "application/json": components["schemas"]["WrappedEngram"];
                 };
             };
-            /** @description Bad request */
+            /** @description Bad Request */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -4482,7 +4487,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Internal server error */
+            /** @description Internal Server Error */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -4521,7 +4526,7 @@ export interface operations {
                     "application/json": components["schemas"]["WrappedGenericBooleanResponse"];
                 };
             };
-            /** @description Bad request */
+            /** @description Bad Request */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -4557,7 +4562,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Internal server error */
+            /** @description Internal Server Error */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -4621,7 +4626,7 @@ export interface operations {
                     "application/json": components["schemas"]["WrappedEngram"];
                 };
             };
-            /** @description Bad request */
+            /** @description Bad Request */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -4657,7 +4662,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Internal server error */
+            /** @description Internal Server Error */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -4704,7 +4709,7 @@ export interface operations {
                     "application/json": components["schemas"]["WrappedAppendMemoryResponse"] | components["schemas"]["WrappedIngestionResponse"];
                 };
             };
-            /** @description Bad request */
+            /** @description Bad Request */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -4740,7 +4745,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Internal server error */
+            /** @description Internal Server Error */
             500: {
                 headers: {
                     [name: string]: unknown;
