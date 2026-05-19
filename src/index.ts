@@ -6,4 +6,5 @@ export type { ClientOptions } from "./runtime/client.ts";
 export type { components } from "./types.ts";
 export * from "./runtime/index.ts";
 export { Nebula } from "./lib/dx.ts";
+export { Nebula as default } from "./lib/dx.ts";
 export type { CompatClientOptions } from "./lib/dx.ts";

@@ -223,6 +223,35 @@ describe("NebulaClient", () => {
     }
   });
 
+  test("array-shaped details (validation errors) survive intact", async () => {
+    // FastAPI's RequestValidationError emits `details` as an array of
+    // {loc, msg, type} entries. Narrowing `details` to Record<string,
+    // unknown> would silently drop the array; the runtime types it as
+    // unknown and the array passes through to err.details verbatim.
+    const validationDetails = [
+      { loc: ["body", "raw_text"], msg: "field required", type: "value_error.missing" },
+      { loc: ["body", "collection_id"], msg: "uuid_parsing", type: "value_error" },
+    ];
+    const envelope = {
+      type: "validation_error",
+      message: "Request validation failed",
+      code: "validation_error",
+      request_id: "rid-validation",
+      details: validationDetails,
+    };
+    const { fetchImpl } = makeMockFetch(() => jsonResponse(422, envelope));
+    const client = new NebulaClient({ baseUrl: "https://api.example.com", fetchImpl });
+    try {
+      await client.memories.search({ body: {} as never });
+      throw new Error("expected throw");
+    } catch (e) {
+      expect(e).toBeInstanceOf(NebulaValidationError);
+      const err = e as NebulaValidationError;
+      expect(Array.isArray(err.details)).toBe(true);
+      expect(err.details).toEqual(validationDetails);
+    }
+  });
+
   test("non-envelope body leaves type/code/details undefined", async () => {
     const { fetchImpl } = makeMockFetch(() =>
       jsonResponse(404, { detail: "missing" }, { "X-Request-Id": "rid-fallback" })

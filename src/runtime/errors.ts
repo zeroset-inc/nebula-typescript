@@ -27,7 +27,11 @@ export interface ErrorEnvelope {
   readonly message: string;
   readonly code?: string | null;
   readonly request_id?: string | null;
-  readonly details?: Record<string, unknown> | null;
+  // `details` is intentionally `unknown`: the server emits arbitrary
+  // JSON here. For validation errors it's an array of {loc, msg, type}
+  // entries; for other classes it can be an object or null. Callers
+  // should narrow at the read site (e.g. `Array.isArray(err.details)`).
+  readonly details?: unknown;
 }
 
 export interface APIErrorPayload {
@@ -56,7 +60,7 @@ export class NebulaAPIError extends NebulaError {
   // an envelope (e.g. an HTML error page from a misconfigured proxy).
   readonly type?: string;
   readonly code?: string;
-  readonly details?: Record<string, unknown> | null;
+  readonly details?: unknown;
 
   constructor(payload: APIErrorPayload, message?: string) {
     const envelope = isEnvelope(payload.body) ? payload.body : undefined;

@@ -242,7 +242,7 @@ export class MemoriesResource {
   /** If true, only returns engrams owned by the user, not all accessible engrams. */
   ownerOnly?: boolean;
   /** Optional list of collection IDs to filter engrams by. If provided, exactly one collection ID must be specified. */
-  collectionIds?: unknown | null;
+  collectionIds?: Array<string> | null;
   /** JSON string for metadata filtering. Example: '{"metadata.source": {"$eq": "playground"}}' */
   metadataFilters?: string | null;
   /** Read-your-writes assertion: the WAL-tail overlay path waits for at least this seq to be applied before serving (or returns 503 Unavailable on timeout). REQUIRES exactly one collection_ids entry — without a collection scope the request returns 422 (the per-WAL-shard scalar applied_wal_seq is meaningless across collections). When the served shard has not been migrated to wal_compaction_enabled, the field is accepted but the served path is the legacy overlay (the assertion has no effect — the response's applied_wal_seq will be 0). Pass back the value the matching upload response surfaced. */
@@ -279,7 +279,7 @@ export class MemoriesResource {
    */
   async recallWorkflow(
     params: {
-  body: unknown;
+  body: components["schemas"]["CursorRecallRequest"] | components["schemas"]["PredictRecallRequest"] | components["schemas"]["ResumeRecallRequest"] | components["schemas"]["EvidenceRecallRequest"] | components["schemas"]["BootstrapRecallRequest"];
 },
     options?: RequestOptions,
   ): Promise<components["schemas"]["WorkflowRecallResponse"]> {

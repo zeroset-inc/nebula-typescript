@@ -29,7 +29,14 @@ export type CompatClientOptions = ClientOptions & {
   api_key?: string | null;
   apiKey?: string | null;
   baseUrl?: string | null;
+  // Stainless-shape alias with capital-URL casing. Existing frontend
+  // callers (CollectionService, MemoryService, PlaygroundService, etc.)
+  // pass `baseURL`; without this alias the value falls through unused
+  // and the runtime defaults to api.trynebula.ai.
+  baseURL?: string | null;
   base_url?: string | null;
+  // Stainless-shape alias for `timeoutMs`. Same compat reason.
+  timeout?: number | null;
   accessToken?: string | null;
   bearerToken?: string | null;
   bearer_token?: string | null;
@@ -285,7 +292,9 @@ function normalizeClientOptions(options: CompatClientOptions): ClientOptions {
     api_key: apiKeyAlias,
     apiKey,
     baseUrl: baseUrlAlias,
-    base_url: baseURLAlias,
+    baseURL: baseURLCapAlias,
+    base_url: baseUrlSnakeAlias,
+    timeout: timeoutAlias,
     bearerToken,
     bearer_token: bearerTokenAlias,
     accessToken,
@@ -298,7 +307,15 @@ function normalizeClientOptions(options: CompatClientOptions): ClientOptions {
     apiKey: firstDefined(apiKey, apiKeyAlias) ?? undefined,
     bearerToken:
       firstDefined(bearerToken, bearerTokenAlias, accessToken, accessTokenAlias) ?? undefined,
-    baseUrl: firstDefined(restClientOptions.baseUrl, baseUrlAlias, baseURLAlias) ?? undefined,
+    baseUrl:
+      firstDefined(
+        restClientOptions.baseUrl,
+        baseUrlAlias,
+        baseURLCapAlias,
+        baseUrlSnakeAlias
+      ) ?? undefined,
+    timeoutMs:
+      firstDefined(restClientOptions.timeoutMs, timeoutAlias) ?? undefined,
   };
 }
 

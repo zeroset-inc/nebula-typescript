@@ -12,6 +12,12 @@ export interface ClientOptions {
   bearerToken?: string;
   defaultHeaders?: Record<string, string>;
   fetchImpl?: typeof fetch;
+  // Caller-supplied RequestInit fields applied to every outbound fetch.
+  // Lets browser callers pass `credentials: "include"` for cookie auth,
+  // or `mode`/`cache`/`referrer` for cross-origin tuning. Method, headers,
+  // body, and signal are owned by the runtime and cannot be overridden
+  // here (they're set per-request).
+  fetchOptions?: Omit<RequestInit, "method" | "headers" | "body" | "signal">;
   timeoutMs?: number;
   retry?: Partial<RetryPolicy>;
   userAgent?: string;
@@ -37,6 +43,7 @@ export class NebulaCore {
   readonly bearerToken?: string;
   readonly defaultHeaders: Record<string, string>;
   readonly fetchImpl: typeof fetch;
+  readonly fetchOptions: Omit<RequestInit, "method" | "headers" | "body" | "signal">;
   readonly timeoutMs: number;
   readonly retry: RetryPolicy;
   readonly userAgent: string;
@@ -47,6 +54,7 @@ export class NebulaCore {
     this.bearerToken = options.bearerToken;
     this.defaultHeaders = options.defaultHeaders ?? {};
     this.fetchImpl = options.fetchImpl ?? globalThis.fetch.bind(globalThis);
+    this.fetchOptions = options.fetchOptions ?? {};
     this.timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
     this.retry = { ...DEFAULT_RETRY, ...(options.retry ?? {}) };
     this.userAgent = options.userAgent ?? "nebula-sdk-js/0.0.1";
@@ -87,7 +95,12 @@ export class NebulaCore {
     const url = this.buildUrl(args.path, args.pathParams, args.query);
     const hasBody = args.body !== undefined && args.body !== null;
     const headers = this.buildHeaders(args.headers, hasBody);
+    // Spread caller-supplied fetch options first so the runtime-owned
+    // method/headers/body always win on key collision. The TS type for
+    // `fetchOptions` already excludes those keys, so this is belt-and-
+    // suspenders.
     const init: RequestInit = {
+      ...this.fetchOptions,
       method: args.method,
       headers,
       body: hasBody ? JSON.stringify(args.body) : undefined,
