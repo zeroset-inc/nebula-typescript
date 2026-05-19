@@ -17,11 +17,16 @@ export class NebulaTimeoutError extends NebulaError {
 // pulls these fields out of the response body and surfaces them as typed
 // accessors on NebulaAPIError so callers can branch on err.code without
 // digging into err.body.
+//
+// The optional fields are typed as `T | null` because the wire schema is
+// `anyOf [T, null]` — the server emits the keys with explicit `null` rather
+// than omitting them. The NebulaAPIError constructor coerces `null` to
+// `undefined` so the public accessor surface stays `T | undefined`.
 export interface ErrorEnvelope {
   readonly type: string;
   readonly message: string;
-  readonly code?: string;
-  readonly request_id?: string;
+  readonly code?: string | null;
+  readonly request_id?: string | null;
   readonly details?: Record<string, unknown> | null;
 }
 
@@ -61,13 +66,21 @@ export class NebulaAPIError extends NebulaError {
         `Nebula API error (status ${payload.status})`
     );
     this.status = payload.status;
+    // Coerce `null` (wire-level) to `undefined` (idiomatic JS absence) so
+    // every accessor's runtime value matches its declared T | undefined.
+    const envCode =
+      typeof envelope?.code === "string" ? envelope.code : undefined;
+    const envRid =
+      typeof envelope?.request_id === "string"
+        ? envelope.request_id
+        : undefined;
     // Prefer the envelope's request_id (server-stamped) over the header
     // we captured at the transport — they should match, but if they
     // diverge the envelope is authoritative.
-    this.requestId = envelope?.request_id ?? payload.requestId;
+    this.requestId = envRid ?? payload.requestId;
     this.body = payload.body;
     this.type = envelope?.type;
-    this.code = envelope?.code;
+    this.code = envCode;
     this.details = envelope?.details ?? undefined;
   }
 }

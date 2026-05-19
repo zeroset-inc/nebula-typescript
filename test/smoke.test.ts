@@ -192,6 +192,37 @@ describe("NebulaClient", () => {
     }
   });
 
+  test("envelope with explicit null code/request_id coerces to undefined", async () => {
+    // The server's Error schema is `code: anyOf [string, null]`. Make sure
+    // a null wire value doesn't leak into `err.code` as the literal `null`.
+    const envelope = {
+      type: "internal_server_error",
+      message: "boom",
+      code: null,
+      request_id: null,
+      details: null,
+    };
+    const { fetchImpl } = makeMockFetch(() =>
+      jsonResponse(500, envelope, { "X-Request-Id": "rid-from-header" })
+    );
+    const client = new NebulaClient({
+      baseUrl: "https://api.example.com",
+      fetchImpl,
+      retry: { maxRetries: 0, baseMs: 1, maxMs: 5 },
+    });
+    try {
+      await client.memories.retrieve("x");
+      throw new Error("expected throw");
+    } catch (e) {
+      const err = e as InstanceType<typeof NebulaNotFoundError>;
+      expect(err.type).toBe("internal_server_error");
+      expect(err.code).toBeUndefined();
+      expect(err.details).toBeUndefined();
+      // Envelope's null request_id falls through to the transport header.
+      expect(err.requestId).toBe("rid-from-header");
+    }
+  });
+
   test("non-envelope body leaves type/code/details undefined", async () => {
     const { fetchImpl } = makeMockFetch(() =>
       jsonResponse(404, { detail: "missing" }, { "X-Request-Id": "rid-fallback" })

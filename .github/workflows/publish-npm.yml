@@ -1,16 +1,24 @@
-# Publish @nebula-ai/sdk to npm. Triggered by release-please on tag, or
-# manually for re-publish recovery.
+# Manual re-publish recovery for @nebula-ai/sdk.
+#
+# The PRIMARY publish path lives in release-please.yml — it runs the
+# publish job conditional on `release_created == 'true'` in the same
+# workflow as the release-PR merge. That avoids the GITHUB_TOKEN
+# recursion guard (a `release: published` trigger would never fire when
+# release-please-action creates the release via the default token).
+#
+# This workflow exists only for the rare case where the automatic
+# publish failed mid-run (npm hiccup, transient build failure) and an
+# operator needs to re-publish the same tag. Trigger it from the
+# Actions UI with workflow_dispatch.
 #
 # Synced from nebula-sdks/custom/downstream-ts/.github/workflows/publish-npm.yml
 # by the upstream nebula-sdk-sync.yml workflow. Edit the template, not the
 # downstream copy.
 
-name: Publish NPM
+name: Publish NPM (manual recovery)
 
 on:
   workflow_dispatch:
-  release:
-    types: [published]
 
 jobs:
   publish:
