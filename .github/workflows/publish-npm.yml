@@ -1,33 +1,42 @@
-# Manual re-publish recovery for @nebula-ai/sdk.
+# Publish @nebula-ai/sdk to npm. Triggered by `release: published` (created
+# by the nebula-sdk-bot GitHub App in release-please.yml), or manually via
+# workflow_dispatch for re-publish recovery.
 #
-# The PRIMARY publish path lives in release-please.yml — it runs the
-# publish job conditional on `release_created == 'true'` in the same
-# workflow as the release-PR merge. That avoids the GITHUB_TOKEN
-# recursion guard (a `release: published` trigger would never fire when
-# release-please-action creates the release via the default token).
+# Authentication is npm OIDC trusted publishing — no NPM_TOKEN secret.
+# The trusted publisher must be configured on npmjs.com for the
+# `@nebula-ai/sdk` package with:
+#   - Org: nebula-agi
+#   - Repo: nebula-typescript
+#   - Workflow filename: publish-npm.yml
+#   - Environment: release
 #
-# This workflow exists only for the rare case where the automatic
-# publish failed mid-run (npm hiccup, transient build failure) and an
-# operator needs to re-publish the same tag. Trigger it from the
-# Actions UI with workflow_dispatch.
+# OIDC publishing requires npm 11.5+; setup-node ships an older npm, so
+# we install npm@11.6.2 explicitly into a side directory and point
+# `npm publish` at that binary.
+#
+# Provenance attestations: `--provenance` makes npm sign the package with
+# a GitHub Actions OIDC token, producing an attestation that npm displays
+# as "Built and signed on GitHub Actions" on the package page.
 #
 # Synced from nebula-sdks/custom/downstream-ts/.github/workflows/publish-npm.yml
 # by the upstream nebula-sdk-sync.yml workflow. Edit the template, not the
 # downstream copy.
 
-name: Publish NPM (manual recovery)
+name: Publish NPM
 
 on:
   workflow_dispatch:
+  release:
+    types: [published]
 
 jobs:
   publish:
     name: publish
     runs-on: ubuntu-latest
+    environment: release
     permissions:
       contents: read
-      id-token: write # for npm provenance
-    environment: release
+      id-token: write # OIDC trusted publishing + provenance attestation
     steps:
       - uses: actions/checkout@v4
 
@@ -46,7 +55,8 @@ jobs:
           node-version: "20"
           registry-url: "https://registry.npmjs.org"
 
-      - name: Publish to npm with provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish --provenance --access public
+      - name: Install npm@11.6.2 (required for OIDC trusted publishing)
+        run: npm install --prefix ../oidc-npm npm@11.6.2
+
+      - name: Publish to npm with provenance via OIDC
+        run: ../oidc-npm/node_modules/.bin/npm publish --provenance --access public
