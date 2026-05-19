@@ -164,4 +164,51 @@ describe("NebulaClient", () => {
       expect((e as NebulaRateLimitError).retryAfter).toBe(2);
     }
   });
+
+  test("canonical Error envelope populates type/code/details/requestId/message", async () => {
+    const envelope = {
+      type: "validation_error",
+      message: "raw_text must be non-empty",
+      code: "raw_text.empty",
+      request_id: "rid-abc-123",
+      details: { field: "raw_text", limit: 1 },
+    };
+    const { fetchImpl } = makeMockFetch(() =>
+      jsonResponse(422, envelope, { "X-Request-Id": "header-rid-should-lose-to-body" })
+    );
+    const client = new NebulaClient({ baseUrl: "https://api.example.com", fetchImpl });
+    try {
+      await client.memories.search({ body: {} as never });
+      throw new Error("expected throw");
+    } catch (e) {
+      expect(e).toBeInstanceOf(NebulaValidationError);
+      const err = e as NebulaValidationError;
+      expect(err.type).toBe("validation_error");
+      expect(err.code).toBe("raw_text.empty");
+      expect(err.details).toEqual({ field: "raw_text", limit: 1 });
+      // Envelope's request_id wins over the transport header.
+      expect(err.requestId).toBe("rid-abc-123");
+      expect(err.message).toBe("raw_text must be non-empty");
+    }
+  });
+
+  test("non-envelope body leaves type/code/details undefined", async () => {
+    const { fetchImpl } = makeMockFetch(() =>
+      jsonResponse(404, { detail: "missing" }, { "X-Request-Id": "rid-fallback" })
+    );
+    const client = new NebulaClient({ baseUrl: "https://api.example.com", fetchImpl });
+    try {
+      await client.memories.retrieve("nope");
+      throw new Error("expected throw");
+    } catch (e) {
+      expect(e).toBeInstanceOf(NebulaNotFoundError);
+      const err = e as NebulaNotFoundError;
+      expect(err.type).toBeUndefined();
+      expect(err.code).toBeUndefined();
+      expect(err.details).toBeUndefined();
+      // Falls back to the transport header when the body isn't an envelope.
+      expect(err.requestId).toBe("rid-fallback");
+      expect(err.message).toBe("Nebula API error (status 404)");
+    }
+  });
 });

@@ -1942,6 +1942,63 @@ export interface components {
          */
         IngestionStatus: "pending" | "parsing" | "extracting" | "chunking" | "embedding" | "augmenting" | "storing" | "failed" | "success";
         /**
+         * ListedEngram
+         * @description Engram as it appears in list responses, with per-row chunk-page metadata appended.
+         */
+        ListedEngram: {
+            /** Chunks */
+            chunks?: unknown[] | null;
+            /** @description True when ``chunks`` carries a prefix of the engram's full chunk set; fetch ``/v1/memories/{id}/chunks`` for the rest. */
+            chunks_truncated?: boolean;
+            /** Collection Ids */
+            collection_ids?: string[];
+            conversation?: components["schemas"]["ConversationFields"] | null;
+            /** Created At */
+            created_at?: string | null;
+            document?: components["schemas"]["DocumentFields"] | null;
+            /** @default pending */
+            extraction_status: components["schemas"]["GraphExtractionStatus"];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id?: string;
+            /** Ingestion Attempt Number */
+            ingestion_attempt_number?: number | null;
+            /** @default pending */
+            ingestion_status: components["schemas"]["IngestionStatus"];
+            kind: components["schemas"]["EngramKind"];
+            /** Merkle Root */
+            merkle_root?: string | null;
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Owner Id
+             * Format: uuid
+             */
+            owner_id: string;
+            /** Search Ready Seq */
+            search_ready_seq?: number | null;
+            /** Size In Bytes */
+            size_in_bytes?: number | null;
+            /** Text */
+            text?: string | null;
+            /** Title */
+            title?: string | null;
+            /** @description Total chunks for this engram across the collection. */
+            total_chunks?: number;
+            /** Total Tokens */
+            total_tokens?: number | null;
+            /** Updated At */
+            updated_at?: string | null;
+            /** Version */
+            version?: string | null;
+            /** Workflow Run Id */
+            workflow_run_id?: string | null;
+        };
+        /**
          * MemoryCreateAcceptedResponse
          * @description Accepted-response envelope for async memory ingestion.
          */
@@ -2106,16 +2163,16 @@ export interface components {
             next_cursor?: string | null;
         };
         /**
-         * PaginatedEngram
-         * @description Cursor-paginated list of Engram entries. The wire envelope is ``{data, next_cursor, has_more}``.
+         * PaginatedListedEngram
+         * @description Cursor-paginated list of ListedEngram entries. The wire envelope is ``{data, next_cursor, has_more}``.
          */
-        PaginatedEngram: {
+        PaginatedListedEngram: {
             /**
              * @description Highest WAL committed sequence number reflected in this response. Non-zero only when the request was served via the WAL-tail fast path. Pair with ``min_applied_wal_seq`` on the request for read-your-writes assertions.
              * @default 0
              */
             applied_wal_seq: number;
-            data: components["schemas"]["Engram"][];
+            data: components["schemas"]["ListedEngram"][];
             /** @description Whether another page is available after this one. */
             has_more: boolean;
             /** @description Opaque cursor for the next page. ``null`` when the caller has reached the end. */
@@ -3869,31 +3926,14 @@ export interface operations {
                      * @example {
                      *       "data": [
                      *         {
-                     *           "collection_ids": [
-                     *             "123e4567-e89b-12d3-a456-426614174000"
-                     *           ],
-                     *           "created_at": "2021-01-01T00:00:00",
-                     *           "document": {
-                     *             "document_type": "pdf"
-                     *           },
-                     *           "extraction_status": "pending",
-                     *           "id": "123e4567-e89b-12d3-a456-426614174000",
-                     *           "ingestion_attempt_number": 0,
-                     *           "ingestion_status": "pending",
                      *           "kind": "document",
-                     *           "metadata": {},
-                     *           "owner_id": "123e4567-e89b-12d3-a456-426614174000",
-                     *           "size_in_bytes": 123456,
-                     *           "title": "Sample Document",
-                     *           "total_tokens": 1000,
-                     *           "updated_at": "2021-01-01T00:00:00",
-                     *           "version": "1.0"
+                     *           "owner_id": "00000000-0000-0000-0000-000000000000"
                      *         }
                      *       ],
                      *       "has_more": false
                      *     }
                      */
-                    "application/json": components["schemas"]["PaginatedEngram"];
+                    "application/json": components["schemas"]["PaginatedListedEngram"];
                 };
             };
             /** @description Bad Request */

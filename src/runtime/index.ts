@@ -18,5 +18,3 @@ export {
 export type { APIErrorPayload } from "./errors.ts";
 export { DEFAULT_RETRY, backoffMs, isRetryableStatus, sleep } from "./retry.ts";
 export type { RetryPolicy } from "./retry.ts";
-export { paginateOffset } from "./pagination.ts";
-export type { OffsetPageEnvelope, OffsetPaginatorOptions, PageFetcher } from "./pagination.ts";

@@ -147,7 +147,7 @@ export class MemoriesResource {
       path: "/v1/memories/{id}",
       pathParams: { id: id },
       query: undefined,
-      idempotent: true,
+      idempotent: false,
       signal: options?.signal,
     });
   }
@@ -182,7 +182,7 @@ export class MemoriesResource {
       pathParams: {},
       query: undefined,
       body: params.body,
-      idempotent: true,
+      idempotent: false,
       signal: options?.signal,
     });
   }
@@ -249,8 +249,8 @@ export class MemoriesResource {
   minAppliedWalSeq?: number | null;
 } = {},
     options?: RequestOptions,
-  ): Promise<components["schemas"]["PaginatedEngram"]> {
-    return this.core.request<components["schemas"]["PaginatedEngram"]>({
+  ): Promise<components["schemas"]["PaginatedListedEngram"]> {
+    return this.core.request<components["schemas"]["PaginatedListedEngram"]>({
       method: "GET",
       path: "/v1/memories",
       pathParams: {},

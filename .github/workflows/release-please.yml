@@ -1,0 +1,28 @@
+# Opens / maintains a release PR that bumps package.json + CHANGELOG.md
+# from Conventional Commits on main. Merging the release PR cuts a tag,
+# which triggers publish-npm.yml.
+#
+# Synced from nebula-sdks/custom/downstream-ts/.github/workflows/release-please.yml
+# by the upstream nebula-sdk-sync.yml workflow. Edit the template, not the
+# downstream copy.
+
+name: release-please
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@v4
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json

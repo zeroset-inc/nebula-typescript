@@ -98,10 +98,12 @@ export class NebulaCore {
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       const controller = new AbortController();
       const timeoutHandle = setTimeout(() => controller.abort(new Error("timeout")), this.timeoutMs);
-      const composedSignal = composeAbort(controller.signal, args.signal);
+      const { signal: composedSignal, dispose: disposeAbort } = composeAbort(
+        controller.signal,
+        args.signal
+      );
       try {
         const response = await this.fetchImpl(url, { ...init, signal: composedSignal });
-        clearTimeout(timeoutHandle);
 
         if (response.ok) {
           if (response.status === 204) return undefined as T;
@@ -127,7 +129,6 @@ export class NebulaCore {
         }
         throw err;
       } catch (rawError) {
-        clearTimeout(timeoutHandle);
         if (rawError instanceof Error && rawError.name === "AbortError") {
           if (args.signal?.aborted) throw rawError;
           throw new NebulaTimeoutError(`Request timed out after ${this.timeoutMs}ms`, { cause: rawError });
@@ -144,22 +145,38 @@ export class NebulaCore {
           throw new NebulaConnectionError(rawError.message, { cause: rawError });
         }
         throw rawError;
+      } finally {
+        clearTimeout(timeoutHandle);
+        disposeAbort();
       }
     }
     throw lastError ?? new NebulaConnectionError("retry budget exhausted");
   }
 }
 
-function composeAbort(timeoutSignal: AbortSignal, userSignal?: AbortSignal): AbortSignal {
-  if (!userSignal) return timeoutSignal;
+function composeAbort(
+  timeoutSignal: AbortSignal,
+  userSignal?: AbortSignal
+): { signal: AbortSignal; dispose: () => void } {
+  if (!userSignal) return { signal: timeoutSignal, dispose: () => {} };
   const controller = new AbortController();
-  const onAbort = (signal: AbortSignal) => () =>
-    controller.abort(signal.reason ?? new Error("aborted"));
+  // Hold one listener per source so dispose can detach exactly what we added.
+  // Caller's signal can outlive the request (e.g. a long-lived request-scope
+  // controller reused across many SDK calls); without dispose, each call's
+  // closures would stay pinned on it until that signal eventually aborts.
+  const onTimeoutAbort = () =>
+    controller.abort(timeoutSignal.reason ?? new Error("aborted"));
+  const onUserAbort = () =>
+    controller.abort(userSignal.reason ?? new Error("aborted"));
   if (timeoutSignal.aborted) controller.abort(timeoutSignal.reason);
   if (userSignal.aborted) controller.abort(userSignal.reason);
-  timeoutSignal.addEventListener("abort", onAbort(timeoutSignal), { once: true });
-  userSignal.addEventListener("abort", onAbort(userSignal), { once: true });
-  return controller.signal;
+  timeoutSignal.addEventListener("abort", onTimeoutAbort, { once: true });
+  userSignal.addEventListener("abort", onUserAbort, { once: true });
+  const dispose = () => {
+    timeoutSignal.removeEventListener("abort", onTimeoutAbort);
+    userSignal.removeEventListener("abort", onUserAbort);
+  };
+  return { signal: controller.signal, dispose };
 }
 
 async function safeReadText(response: Response): Promise<string> {
