@@ -1,6 +1,8 @@
 {
   "packages": {
-    ".": {}
+    ".": {
+      "extra-files": null
+    }
   },
   "$schema": "https://raw.githubusercontent.com/stainless-api/release-please/main/schemas/config.json",
   "include-v-in-tag": true,
@@ -60,5 +62,8 @@
     }
   ],
   "release-type": "node",
-  "extra-files": ["src/version.ts", "README.md"]
+  "extra-files": [
+    "src/version.ts",
+    "README.md"
+  ]
 }
