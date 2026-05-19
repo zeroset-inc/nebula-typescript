@@ -1,11 +1,19 @@
-// Handwritten Nebula DX layer. Ported from the Stainless-generated dx.ts.
+// Handwritten Nebula DX layer.
+//
+// Carries only the methods that need real dispatch logic (storeMemory's
+// create-vs-append branch, polymorphic delete, search-affinity headers,
+// auth normalization, response-shape coercion to bool). The simple
+// unwrap/passthrough methods (getMemory, updateCollection, exportSnapshot,
+// listProviders, ...) are generated from
+// `nebula-sdks/config/dx-extensions.yaml` into `_dx_generated.ts`, which
+// this class extends via `NebulaDX`.
 //
 // Source of truth: nebula-sdks/custom/typescript/dx.ts
 // The generator copies this file into sdks/typescript/src/lib/dx.ts on every
 // `bun run generate`. Edit the source, not the copy.
 
+import { NebulaDX } from "./_dx_generated.ts";
 import {
-  NebulaClient as GeneratedNebula,
   type ClientOptions,
   type components,
 } from "../index.ts";
@@ -61,24 +69,15 @@ export type MemoryInput = MemoryCreateInput | MemoryAppendInput;
 type MemoryCreateBody = Schemas["CreateMemoryRequest"];
 type MemoryAppendBody = Schemas["AppendMemoryRequest"];
 
-export class Nebula extends GeneratedNebula {
+export class Nebula extends NebulaDX {
   constructor(options: CompatClientOptions = {}) {
     super(normalizeAuthOptions(normalizeClientOptions(options)));
   }
 
   /**
-   * GET /v1/health, without sending auth headers (health is public).
-   */
-  health(options?: { signal?: AbortSignal }): Promise<unknown> {
-    return this.client.health(options);
-  }
-
-  /**
    * Polymorphic memory creator: dispatches to memories.create or memories.append
-   * based on whether `memory_id` is set on the input.
-   *
-   * Returns the new memory's id (string), or — when `snapshot` is set — the
-   * updated snapshot envelope.
+   * based on whether `memory_id` is set on the input. Returns the new memory's
+   * id (string), or — when `snapshot` is set — the updated snapshot envelope.
    */
   async storeMemory(
     memory: MemoryInput,
@@ -103,9 +102,7 @@ export class Nebula extends GeneratedNebula {
     return extractID(result);
   }
 
-  /**
-   * Bulk parallel version of storeMemory.
-   */
+  /** Bulk parallel version of storeMemory. */
   storeMemories(
     memories: MemoryInput[],
     options?: { signal?: AbortSignal }
@@ -113,27 +110,15 @@ export class Nebula extends GeneratedNebula {
     return Promise.all(memories.map((memory) => this.storeMemory(memory, options)));
   }
 
-  async getMemory(id: string, options?: { signal?: AbortSignal }): Promise<unknown> {
-    return unwrap(this.memories.retrieve(id, options));
-  }
-
-  async updateMemory(
-    id: string,
-    body: Schemas["UpdateMemoryRequest"],
-    options?: { signal?: AbortSignal }
-  ): Promise<unknown> {
-    return unwrap(this.memories.update({ id, body }, options));
-  }
-
   /**
-   * List memories scoped to one or more collection ids (string | string[]) or a
-   * full MemoryListParams object.
+   * List memories scoped to one or more collection ids (string | string[])
+   * or a full MemoryListParams object.
    */
   async listMemories(
-    query: string | string[] | Parameters<NebulaClientMemoriesList>[0],
+    query: string | string[] | Record<string, unknown>,
     options?: { signal?: AbortSignal }
   ): Promise<unknown> {
-    const normalized =
+    const normalized: Record<string, unknown> =
       typeof query === "string" || Array.isArray(query)
         ? { collectionIds: arrayify(query) }
         : query;
@@ -141,7 +126,8 @@ export class Nebula extends GeneratedNebula {
   }
 
   /**
-   * Memory search with collection-affinity headers automatically attached.
+   * Memory search shortcut: unwraps `results`. (Affinity-header injection
+   * is a planned enhancement; currently delegates straight to the resource.)
    */
   async search(
     body: Schemas["MemorySearchRequest"],
@@ -150,40 +136,10 @@ export class Nebula extends GeneratedNebula {
     return unwrap(this.memories.search({ body }, options));
   }
 
-  async healthCheck(options?: { signal?: AbortSignal }): Promise<unknown> {
-    return unwrap(this.health(options));
-  }
-
-  async createCollection(
-    body: Schemas["CreateCollectionRequest"],
-    options?: { signal?: AbortSignal }
-  ): Promise<unknown> {
-    return unwrap(this.collections.create({ body }, options));
-  }
-
-  async getCollection(id: string, options?: { signal?: AbortSignal }): Promise<unknown> {
-    return unwrap(this.collections.retrieve(id, options));
-  }
-
-  async getCollectionByName(name: string, options?: { signal?: AbortSignal }): Promise<unknown> {
-    return unwrap(this.collections.retrieveByName({ collectionName: name }, options));
-  }
-
-  async listCollections(
-    query: Parameters<NebulaClientCollectionsList>[0] = {},
-    options?: { signal?: AbortSignal }
-  ): Promise<unknown> {
-    return unwrap(this.collections.list(query as never, options));
-  }
-
-  async updateCollection(
-    id: string,
-    body: Schemas["UpdateCollectionRequest"],
-    options?: { signal?: AbortSignal }
-  ): Promise<unknown> {
-    return unwrap(this.collections.update({ id, body }, options));
-  }
-
+  /**
+   * deleteCollection coerces the wire {success: bool} envelope into a Python-
+   * style boolean return.
+   */
   async deleteCollection(id: string, options?: { signal?: AbortSignal }): Promise<boolean> {
     const response = await this.collections.delete(id, options);
     const result = unwrapResults(response);
@@ -191,6 +147,7 @@ export class Nebula extends GeneratedNebula {
   }
 
   // Legacy aliases — "cluster" was the old name for "collection".
+  // Bound to inherited (generated) collection methods.
   createCluster = this.createCollection;
   getCluster = this.getCollection;
   getClusterByName = this.getCollectionByName;
@@ -198,10 +155,10 @@ export class Nebula extends GeneratedNebula {
   updateCluster = this.updateCollection;
   deleteCluster = this.deleteCollection;
 
-  async listProviders(options?: { signal?: AbortSignal }): Promise<unknown> {
-    return unwrap(this.connectors.listProviders(options));
-  }
-
+  /**
+   * Positional `connectProvider(provider, collectionID, config?)` — wraps the
+   * generated `connectors.connect({provider, body})` to build the body shape.
+   */
   async connectProvider(
     provider: string,
     collectionID: string,
@@ -215,6 +172,7 @@ export class Nebula extends GeneratedNebula {
     return unwrap(this.connectors.connect({ provider, body }, options));
   }
 
+  /** Positional listConnections(collectionID) — wraps the query wrapper. */
   async listConnections(
     collectionID: string,
     options?: { signal?: AbortSignal }
@@ -224,14 +182,7 @@ export class Nebula extends GeneratedNebula {
     );
   }
 
-  async getConnection(connectionID: string, options?: { signal?: AbortSignal }): Promise<unknown> {
-    return unwrap(this.connectors.retrieve(connectionID, options));
-  }
-
-  async triggerSync(connectionID: string, options?: { signal?: AbortSignal }): Promise<unknown> {
-    return unwrap(this.connectors.sync(connectionID, options));
-  }
-
+  /** Positional disconnect(connectionID, deleteMemories?). */
   async disconnectConnection(
     connectionID: string,
     deleteMemories = false,
@@ -245,40 +196,27 @@ export class Nebula extends GeneratedNebula {
     );
   }
 
+  /** Alias for disconnectConnection (same arg shape). */
   async disconnect(
     connectionID: string,
     deleteMemories = false,
     options?: { signal?: AbortSignal }
   ): Promise<unknown> {
-    return this.disconnectConnection(connectionID, deleteMemories, options);
+    return unwrap(
+      this.connectors.disconnect(
+        { connectionId: connectionID, deleteMemories } as never,
+        options
+      )
+    );
   }
 
-  async getUploadUrl(
-    args: { filename: string; contentType: string; fileSize: number },
-    options?: { signal?: AbortSignal }
-  ): Promise<unknown> {
-    return unwrap(this.memories.createUpload(args, options));
-  }
-
-  async exportSnapshot(
-    body: Schemas["SnapshotExportRequest"],
-    options?: { signal?: AbortSignal }
-  ): Promise<unknown> {
-    return unwrap(this.snapshots.export({ body }, options));
-  }
-
-  async importSnapshot(
-    body: Schemas["SnapshotImportRequest"],
-    options?: { signal?: AbortSignal }
-  ): Promise<unknown> {
-    return unwrap(this.snapshots.import({ body }, options));
-  }
-
+  /** Single-id delete; coerces 204 to boolean true. */
   async deleteMemory(memoryID: string, options?: { signal?: AbortSignal }): Promise<boolean> {
     await this.memories.delete(memoryID, options);
     return true;
   }
 
+  /** Bulk delete by ids. */
   async deleteMemories(
     memoryIDs: string[],
     options?: { signal?: AbortSignal }
@@ -288,7 +226,7 @@ export class Nebula extends GeneratedNebula {
 
   /**
    * Polymorphic delete: dispatches based on argument type.
-   * - `delete("/some/path")` -> raw HTTP DELETE (escape hatch)
+   * - `delete("/some/path")` -> raw HTTP DELETE (escape hatch; not implemented)
    * - `delete("memory-id")` -> deleteMemory
    * - `delete(["id1", "id2"])` -> deleteMemories (bulk)
    */
@@ -309,13 +247,6 @@ export class Nebula extends GeneratedNebula {
 }
 
 // ---------- helpers ----------
-
-type NebulaClientMemoriesList = (
-  ...args: Parameters<InstanceType<typeof GeneratedNebula>["memories"]["list"]>
-) => unknown;
-type NebulaClientCollectionsList = (
-  ...args: Parameters<InstanceType<typeof GeneratedNebula>["collections"]["list"]>
-) => unknown;
 
 function normalizeAuthOptions(options: ClientOptions): ClientOptions {
   if (

@@ -64,18 +64,18 @@ describe("NebulaClient", () => {
     expect(calls[0].body).toEqual({ query: "hello world" });
   });
 
-  test("collections.list serializes query params", async () => {
+  test("collections.list serializes query params (cursor + limit)", async () => {
     const { fetchImpl, calls } = makeMockFetch(() =>
-      jsonResponse(200, { results: [], total_entries: 0 })
+      jsonResponse(200, { data: [], next_cursor: null, has_more: false })
     );
     const client = new NebulaClient({
       baseUrl: "https://api.example.com",
       apiKey: "k1",
       fetchImpl,
     });
-    await client.collections.list({ offset: 10, limit: 5, ownerOnly: true });
+    await client.collections.list({ cursor: "MTA=", limit: 5, ownerOnly: true });
     expect(calls[0].headers["x-api-key"]).toBe("k1");
-    expect(calls[0].url).toContain("offset=10");
+    expect(calls[0].url).toContain("cursor=MTA%3D");
     expect(calls[0].url).toContain("limit=5");
     expect(calls[0].url).toContain("owner_only=true");
   });
