@@ -1,5 +1,36 @@
 # Changelog
 
+## 1.4.0 (2026-05-19)
+
+Full Changelog: [v1.3.0...v1.4.0](https://github.com/nebula-agi/nebula-typescript/compare/v1.3.0...v1.4.0)
+
+### Features
+
+* Add workflow synthesis pipeline ([384d0cb](https://github.com/nebula-agi/nebula-typescript/commit/384d0cbaf7401f7bbc0fc79a3811758344c61af5))
+* graph: unify TASK→EPISODIC + decouple Step 3.5+ from ingest ack ([ef47505](https://github.com/nebula-agi/nebula-typescript/commit/ef47505cf23fd175e7528d4b9c6c7deac2bc5bdb))
+* **overview:** Shape A++ — additive scaffolding for Memories upload→list RYW ([78a5185](https://github.com/nebula-agi/nebula-typescript/commit/78a518582254192ffda5700ac85f87b61f926ebe))
+* Rationale grounding + backfill outbox for v4 trace pipeline ([a1e097c](https://github.com/nebula-agi/nebula-typescript/commit/a1e097ce0ac2ccd815b9a10ef762ad2204280c48))
+* support setting headers via env ([8283ad3](https://github.com/nebula-agi/nebula-typescript/commit/8283ad372cefe5ea4214d38873d6365cfd120cf3))
+
+
+### Chores
+
+* configure new SDK language ([b1382c4](https://github.com/nebula-agi/nebula-typescript/commit/b1382c49cc44d87745fbf8c36ac56bd0dac15c4f))
+* **format:** run eslint and prettier separately ([4ee384f](https://github.com/nebula-agi/nebula-typescript/commit/4ee384f8f6155a006a39011e68772cfa50c63381))
+* **internal:** codegen related update ([c27bb1e](https://github.com/nebula-agi/nebula-typescript/commit/c27bb1eacb365332f0398f999b26a87bc7e2e53f))
+* **internal:** codegen related update ([7806cb2](https://github.com/nebula-agi/nebula-typescript/commit/7806cb245908e4d89c11ff27649a10096295365b))
+* redact api-key headers in debug logs ([18bf5b5](https://github.com/nebula-agi/nebula-typescript/commit/18bf5b5719acdc47fa80f5e6f0dee5fcd1f622d8))
+
+
+### Documentation
+
+* align SDK examples with nebula-sdk v1.3.0; fix stale router descriptions ([020c8a4](https://github.com/nebula-agi/nebula-typescript/commit/020c8a40e2c119775eea985b5f2e72ec9fd39e13))
+
+
+### Refactors
+
+* **engrams:** typed EngramKind + ConversationFields/DocumentFields substructure ([5ecdcb7](https://github.com/nebula-agi/nebula-typescript/commit/5ecdcb7b5e8e43d12119f9c91c4dcf4adfc46f5d))
+
 ## 1.3.0 (2026-04-27)
 
 Full Changelog: [v1.2.2...v1.3.0](https://github.com/nebula-agi/nebula-typescript/compare/v1.2.2...v1.3.0)
