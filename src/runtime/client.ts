@@ -52,7 +52,13 @@ export class NebulaCore {
     this.baseUrl = (options.baseUrl ?? DEFAULT_BASE_URL).replace(/\/$/, "");
     this.apiKey = options.apiKey;
     this.bearerToken = options.bearerToken;
-    this.defaultHeaders = options.defaultHeaders ?? {};
+    // Filter null/undefined values. Callers (often using `as any` to
+    // bypass the `Record<string, string>` type) pass nulls to suppress
+    // a header — but `new Headers({k: null})` coerces null to the
+    // literal string "null", which a backend that checks "is this
+    // header present" treats as an explicit credential. Strip nulls
+    // here so the Headers constructor sees only real string values.
+    this.defaultHeaders = filterNullishHeaders(options.defaultHeaders);
     this.fetchImpl = options.fetchImpl ?? globalThis.fetch.bind(globalThis);
     this.fetchOptions = options.fetchOptions ?? {};
     this.timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
@@ -207,6 +213,20 @@ function safeParseJSON(text: string): unknown {
   } catch {
     return undefined;
   }
+}
+
+function filterNullishHeaders(
+  headers: Record<string, string> | undefined
+): Record<string, string> {
+  if (!headers) return {};
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(headers)) {
+    // Accept anything that survives the truthy guard; the type is
+    // `Record<string, string>` but callers occasionally cast with
+    // `as any` to slip nulls through.
+    if (v !== null && v !== undefined) out[k] = v;
+  }
+  return out;
 }
 
 function parseRetryAfter(header: string | null): number | undefined {
