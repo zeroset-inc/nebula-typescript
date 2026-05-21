@@ -1,210 +1,181 @@
-import { Nebula as GeneratedNebula, type ClientOptions } from '../client';
-import { APIPromise } from '../core/api-promise';
-import { buildHeaders } from '../internal/headers';
-import type { PromiseOrValue } from '../internal/types';
-import type { RequestOptions } from '../internal/request-options';
-import type { HealthResponse } from '../resources/top-level';
-import type {
-  CollectionCreateParams,
-  CollectionCreateResponse,
-  CollectionDeleteResponse,
-  CollectionListParams,
-  CollectionListResponse,
-  CollectionRetrieveByNameResponse,
-  CollectionRetrieveResponse,
-  CollectionUpdateParams,
-  CollectionUpdateResponse,
-} from '../resources/collections';
-import type {
-  ConnectorConnectResponse,
-  ConnectorDisconnectResponse,
-  ConnectorListProvidersResponse,
-  ConnectorListResponse,
-  ConnectorRetrieveResponse,
-  ConnectorSyncResponse,
-} from '../resources/connectors';
-import type {
-  MemoryAppendParams,
-  MemoryCreateParams,
-  MemoryCreateResponse,
-  MemoryCreateUploadParams,
-  MemoryCreateUploadResponse,
-  MemoryDeleteManyResponse,
-  MemoryDeleteResponse,
-  MemoryListParams,
-  MemoryListResponse,
-  MemoryRetrieveResponse,
-  MemorySearchParams,
-  MemorySearchResponse,
-  MemoryUpdateParams,
-  MemoryUpdateResponse,
-} from '../resources/memories';
-import type {
-  SnapshotExportResponse,
-  SnapshotImportParams,
-  SnapshotImportResponse,
-} from '../resources/snapshots';
-import { path } from '../internal/utils/path';
+// Handwritten Nebula DX layer.
+//
+// Carries only the methods that need real dispatch logic (storeMemory's
+// create-vs-append branch, polymorphic delete, search-affinity headers,
+// auth normalization, response-shape coercion to bool). The simple
+// unwrap/passthrough methods (getMemory, updateCollection, exportSnapshot,
+// listProviders, ...) are generated from
+// `nebula-sdks/config/dx-extensions.yaml` into `_dx_generated.ts`, which
+// this class extends via `NebulaDX`.
+//
+// Source of truth: nebula-sdks/custom/typescript/dx.ts
+// The generator copies this file into sdks/typescript/src/lib/dx.ts on every
+// `bun run generate`. Edit the source, not the copy.
+
+import { NebulaDX } from "./_dx_generated.ts";
+import {
+  type ClientOptions,
+  type components,
+} from "../index.ts";
+
+type Schemas = components["schemas"];
+type SnapshotEnvelopeInput = Schemas["SnapshotEnvelope-Input"];
+type SnapshotEnvelopeOutput = Schemas["SnapshotEnvelope-Output"];
 
 type ResultsOf<T> = T extends { results: infer R } ? R : T;
-type MemoryCreateResult = MemoryCreateResponse['results'];
-type StoredMemoryResult = string | MemoryCreateResult;
-type SnapshotMemoryInput = MemoryCreateInput & { snapshot: NonNullable<MemoryCreateParams['snapshot']> };
-type NonSnapshotMemoryInput = MemoryInput & { snapshot?: null | undefined };
 type RequestPath = `/${string}` | `http://${string}` | `https://${string}`;
-type CompatClientOptions = ClientOptions & {
+
+export type CompatClientOptions = ClientOptions & {
   api_key?: string | null;
+  apiKey?: string | null;
   baseUrl?: string | null;
+  // Stainless-shape alias with capital-URL casing. Existing frontend
+  // callers (CollectionService, MemoryService, PlaygroundService, etc.)
+  // pass `baseURL`; without this alias the value falls through unused
+  // and the runtime defaults to api.zeroset.com.
+  baseURL?: string | null;
   base_url?: string | null;
+  // Stainless-shape alias for `timeoutMs`. Same compat reason.
+  timeout?: number | null;
+  accessToken?: string | null;
   bearerToken?: string | null;
   bearer_token?: string | null;
+  access_token?: string | null;
 };
 
 export interface MemoryCommonInput {
   collection_id?: string | null;
   collectionId?: string | null;
-  content?: string | MemoryCreateParams['content_parts'];
+  content?: string | string[] | unknown[] | null;
   raw_text?: string | null;
   chunks?: Array<string> | null;
-  messages?: MemoryCreateParams['messages'];
+  messages?: unknown[] | null;
   metadata?: { [key: string]: unknown } | null;
-  ingestion_config?: MemoryCreateParams['ingestion_config'];
-  ingestion_mode?: MemoryCreateParams['ingestion_mode'];
+  ingestion_config?: unknown;
+  ingestion_mode?: string | null;
 }
 
-export interface MemoryCreateInput
-  extends MemoryCommonInput,
-    Pick<
-      MemoryCreateParams,
-      'content_parts' | 'contents' | 'engram_type' | 'name' | 'snapshot' | 'speaker_id' | 'speaker_name'
-    > {
+export interface MemoryCreateInput extends MemoryCommonInput {
+  name?: string | null;
+  speaker_id?: string | null;
+  speaker_name?: string | null;
+  content_parts?: unknown[] | null;
+  contents?: string[] | null;
+  snapshot?: SnapshotEnvelopeInput | null;
   memory_id?: undefined | null;
 }
 
-export interface MemoryAppendInput extends Omit<MemoryCommonInput, 'ingestion_mode' | 'messages'> {
+export interface MemoryAppendInput extends Omit<MemoryCommonInput, "ingestion_mode" | "messages"> {
   memory_id: string;
-  ingestion_mode?: MemoryAppendParams['ingestion_mode'];
-  messages?: MemoryAppendParams['messages'];
+  ingestion_mode?: string | null;
+  messages?: unknown[] | null;
 }
 
 export type MemoryInput = MemoryCreateInput | MemoryAppendInput;
 
-export class Nebula extends GeneratedNebula {
+type MemoryCreateBody = Schemas["CreateMemoryRequest"];
+type MemoryAppendBody = Schemas["AppendMemoryRequest"];
+
+export class Nebula extends NebulaDX {
   constructor(options: CompatClientOptions = {}) {
     super(normalizeAuthOptions(normalizeClientOptions(options)));
   }
 
-  override health(options?: RequestOptions): APIPromise<HealthResponse> {
-    return this.get('/v1/health', {
-      ...options,
-      headers: buildHeaders([options?.headers, { 'X-API-Key': null, Authorization: null }]),
-      __security: {},
-    });
-  }
-
-  async storeMemory(memory: SnapshotMemoryInput, options?: RequestOptions): Promise<MemoryCreateResult>;
-  async storeMemory(memory: NonSnapshotMemoryInput, options?: RequestOptions): Promise<string>;
-  async storeMemory(memory: MemoryInput, options?: RequestOptions): Promise<StoredMemoryResult>;
-  async storeMemory(memory: MemoryInput, options?: RequestOptions): Promise<StoredMemoryResult> {
-    if (memory.memory_id != null) {
+  /**
+   * Polymorphic memory creator: dispatches to memories.create or memories.append
+   * based on whether `memory_id` is set on the input. Returns the new memory's
+   * id (string), or — when `snapshot` is set — the updated snapshot envelope.
+   */
+  async storeMemory(
+    memory: MemoryInput,
+    options?: { signal?: AbortSignal }
+  ): Promise<string | SnapshotEnvelopeOutput> {
+    if ("memory_id" in memory && memory.memory_id != null) {
       const memoryID = memory.memory_id;
-      await this.memories.append(memoryID, toMemoryAppendParams(memory), options);
+      await this.memories.append(
+        { id: memoryID, body: toMemoryAppendParams(memory) },
+        options
+      );
       return memoryID;
     }
-
-    const response = await this.memories.create(toMemoryCreateParams(memory), options);
+    const response = await this.memories.create(
+      { body: toMemoryCreateParams(memory as MemoryCreateInput) },
+      options
+    );
     const result = unwrapResults(response);
-    if (isMemoryCreateResult(result)) {
-      return result;
+    if (isSnapshotResult(result)) {
+      return (result.snapshot ?? result) as SnapshotEnvelopeOutput;
     }
     return extractID(result);
   }
 
-  storeMemories(memories: SnapshotMemoryInput[], options?: RequestOptions): Promise<MemoryCreateResult[]>;
-  storeMemories(memories: NonSnapshotMemoryInput[], options?: RequestOptions): Promise<string[]>;
-  storeMemories(memories: MemoryInput[], options?: RequestOptions): Promise<StoredMemoryResult[]>;
-  storeMemories(memories: MemoryInput[], options?: RequestOptions): Promise<StoredMemoryResult[]> {
-    return Promise.all(memories.map((memory) => this.storeMemory(memory, options)));
-  }
-
-  getMemory(id: string, options?: RequestOptions): Promise<MemoryRetrieveResponse['results']> {
-    return unwrap(this.memories.retrieve(id, options));
-  }
-
-  updateMemory(
-    id: string,
-    params: MemoryUpdateParams,
-    options?: RequestOptions,
-  ): Promise<MemoryUpdateResponse['results']> {
-    return unwrap(this.memories.update(id, params, options));
-  }
-
-  listMemories(
-    query: MemoryListParams | string | string[],
-    options?: RequestOptions,
-  ): Promise<MemoryListResponse['results']> {
-    const normalized =
-      typeof query === 'string' || Array.isArray(query) ? { collection_ids: arrayify(query) } : query;
-    return unwrap(this.memories.list(normalized, options));
-  }
-
-  search(body: MemorySearchParams, options?: RequestOptions): Promise<ResultsOf<MemorySearchResponse>> {
-    const collectionIDs =
-      Array.isArray(body.collection_ids) ? body.collection_ids
-      : body.collection_ids ? [body.collection_ids]
-      : undefined;
-    return unwrap(
-      this.memories.search(body, {
-        ...options,
-        headers: buildHeaders([options?.headers, collectionAffinityHeaders(collectionIDs)]),
-      }),
+  /**
+   * Bulk parallel version of storeMemory with a concurrency cap.
+   *
+   * Default 8 concurrent in-flight requests matches the Python DX's
+   * `asyncio.Semaphore(max_concurrency)` pattern. Use `maxConcurrency: 1`
+   * for strictly serial submission; higher values risk overwhelming the
+   * server when memories[] is large.
+   */
+  async storeMemories(
+    memories: MemoryInput[],
+    options?: { signal?: AbortSignal; maxConcurrency?: number }
+  ): Promise<(string | SnapshotEnvelopeOutput)[]> {
+    const cap = Math.max(1, options?.maxConcurrency ?? 8);
+    const signal = options?.signal;
+    const results: (string | SnapshotEnvelopeOutput)[] = new Array(memories.length);
+    let nextIndex = 0;
+    const worker = async (): Promise<void> => {
+      while (true) {
+        const i = nextIndex++;
+        if (i >= memories.length) return;
+        results[i] = await this.storeMemory(memories[i], { signal });
+      }
+    };
+    await Promise.all(
+      Array.from({ length: Math.min(cap, memories.length) }, () => worker())
     );
+    return results;
   }
 
-  healthCheck(options?: RequestOptions): Promise<HealthResponse['results']> {
-    return unwrap(this.health(options));
+  /**
+   * List memories scoped to one or more collection ids (string | string[])
+   * or a full MemoryListParams object.
+   */
+  async listMemories(
+    query: string | string[] | Record<string, unknown>,
+    options?: { signal?: AbortSignal }
+  ): Promise<unknown> {
+    const normalized: Record<string, unknown> =
+      typeof query === "string" || Array.isArray(query)
+        ? { collectionIds: arrayify(query) }
+        : query;
+    return unwrap(this.memories.list(normalized as never, options));
   }
 
-  createCollection(
-    body: CollectionCreateParams,
-    options?: RequestOptions,
-  ): Promise<CollectionCreateResponse['results']> {
-    return unwrap(this.collections.create(body, options));
+  /**
+   * Memory search shortcut: unwraps `results`. (Affinity-header injection
+   * is a planned enhancement; currently delegates straight to the resource.)
+   */
+  async search(
+    body: Schemas["MemorySearchRequest"],
+    options?: { signal?: AbortSignal }
+  ): Promise<unknown> {
+    return unwrap(this.memories.search({ body }, options));
   }
 
-  getCollection(id: string, options?: RequestOptions): Promise<CollectionRetrieveResponse['results']> {
-    return unwrap(this.collections.retrieve(id, options));
+  /**
+   * deleteCollection coerces the wire {success: bool} envelope into a Python-
+   * style boolean return.
+   */
+  async deleteCollection(id: string, options?: { signal?: AbortSignal }): Promise<boolean> {
+    const response = await this.collections.delete(id, options);
+    const result = unwrapResults(response);
+    return Boolean((result as { success?: boolean }).success);
   }
 
-  getCollectionByName(
-    name: string,
-    options?: RequestOptions,
-  ): Promise<CollectionRetrieveByNameResponse['results']> {
-    return unwrap(this.collections.retrieveByName(name, {}, options));
-  }
-
-  listCollections(
-    query: CollectionListParams = {},
-    options?: RequestOptions,
-  ): Promise<CollectionListResponse['results']> {
-    return unwrap(this.collections.list(query, options));
-  }
-
-  updateCollection(
-    id: string,
-    body: CollectionUpdateParams,
-    options?: RequestOptions,
-  ): Promise<CollectionUpdateResponse['results']> {
-    return unwrap(this.collections.update(id, body, options));
-  }
-
-  deleteCollection(id: string, options?: RequestOptions): Promise<boolean> {
-    return this.collections.delete(id, options).then((response: CollectionDeleteResponse) => {
-      const result = unwrapResults(response) as { success?: boolean };
-      return Boolean(result.success);
-    });
-  }
-
+  // Legacy aliases — "cluster" was the old name for "collection".
+  // Bound to inherited (generated) collection methods.
   createCluster = this.createCollection;
   getCluster = this.getCollection;
   getClusterByName = this.getCollectionByName;
@@ -212,117 +183,106 @@ export class Nebula extends GeneratedNebula {
   updateCluster = this.updateCollection;
   deleteCluster = this.deleteCollection;
 
-  listProviders(options?: RequestOptions): Promise<ConnectorListProvidersResponse['results']> {
-    return unwrap(this.connectors.listProviders(options));
-  }
-
-  connectProvider(
+  /**
+   * Positional `connectProvider(provider, collectionID, config?)` — wraps the
+   * generated `connectors.connect({provider, body})` to build the body shape.
+   */
+  async connectProvider(
     provider: string,
     collectionID: string,
     config?: Record<string, unknown>,
-    options?: RequestOptions,
-  ): Promise<ConnectorConnectResponse['results']> {
+    options?: { signal?: AbortSignal }
+  ): Promise<unknown> {
+    const body: Schemas["ConnectRequest"] = {
+      collection_id: collectionID,
+      ...(config !== undefined ? { config } : {}),
+    } as Schemas["ConnectRequest"];
+    return unwrap(this.connectors.connect({ provider, body }, options));
+  }
+
+  /** Positional listConnections(collectionID) — wraps the query wrapper. */
+  async listConnections(
+    collectionID: string,
+    options?: { signal?: AbortSignal }
+  ): Promise<unknown> {
     return unwrap(
-      this.connectors.connect(
-        provider,
-        config === undefined ? { collection_id: collectionID } : { collection_id: collectionID, config },
-        options,
-      ),
+      this.connectors.list({ collectionId: collectionID } as never, options)
     );
   }
 
-  listConnections(collectionID: string, options?: RequestOptions): Promise<ConnectorListResponse['results']> {
-    return unwrap(this.connectors.list({ collection_id: collectionID }, options));
-  }
-
-  getConnection(
-    connectionID: string,
-    options?: RequestOptions,
-  ): Promise<ConnectorRetrieveResponse['results']> {
-    return unwrap(this.connectors.retrieve(connectionID, options));
-  }
-
-  triggerSync(connectionID: string, options?: RequestOptions): Promise<ConnectorSyncResponse['results']> {
-    return unwrap(this.connectors.sync(connectionID, options));
-  }
-
-  disconnectConnection(
+  /** Positional disconnect(connectionID, deleteMemories?). */
+  async disconnectConnection(
     connectionID: string,
     deleteMemories = false,
-    options?: RequestOptions,
-  ): Promise<ConnectorDisconnectResponse['results']> {
-    return unwrap(this.connectors.disconnect(connectionID, { delete_memories: deleteMemories }, options));
+    options?: { signal?: AbortSignal }
+  ): Promise<unknown> {
+    return unwrap(
+      this.connectors.disconnect(
+        { connectionId: connectionID, deleteMemories } as never,
+        options
+      )
+    );
   }
 
-  disconnect(
+  /** Alias for disconnectConnection (same arg shape). */
+  async disconnect(
     connectionID: string,
     deleteMemories = false,
-    options?: RequestOptions,
-  ): Promise<ConnectorDisconnectResponse['results']> {
-    return this.disconnectConnection(connectionID, deleteMemories, options);
+    options?: { signal?: AbortSignal }
+  ): Promise<unknown> {
+    return unwrap(
+      this.connectors.disconnect(
+        { connectionId: connectionID, deleteMemories } as never,
+        options
+      )
+    );
   }
 
-  getUploadUrl(
-    params: MemoryCreateUploadParams,
-    options?: RequestOptions,
-  ): Promise<MemoryCreateUploadResponse['results']> {
-    return unwrap(this.memories.createUpload(params, options));
+  /** Single-id delete; coerces 204 to boolean true. */
+  async deleteMemory(memoryID: string, options?: { signal?: AbortSignal }): Promise<boolean> {
+    await this.memories.delete(memoryID, options);
+    return true;
   }
 
-  exportSnapshot(collectionID: string, options?: RequestOptions): Promise<SnapshotExportResponse['results']> {
-    return unwrap(this.snapshots.export({ collection_id: collectionID }, options));
-  }
-
-  importSnapshot(
-    snapshot: SnapshotImportParams['snapshot'],
-    options?: RequestOptions,
-  ): Promise<SnapshotImportResponse['results']> {
-    return unwrap(this.snapshots.import({ snapshot }, options));
-  }
-
-  deleteMemory(memoryID: string, options?: PromiseOrValue<RequestOptions>): APIPromise<boolean> {
-    return super
-      .delete<MemoryDeleteResponse>(path`/v1/memories/${memoryID}`, options)
-      ._thenUnwrap(() => true);
-  }
-
-  deleteMemories(
+  /** Bulk delete by ids. */
+  async deleteMemories(
     memoryIDs: string[],
-    options?: PromiseOrValue<RequestOptions>,
-  ): APIPromise<MemoryDeleteManyResponse> {
-    return super.post<MemoryDeleteManyResponse>(
-      '/v1/memories/delete',
-      Promise.resolve(options).then((resolved) => ({ ...resolved, body: memoryIDs })),
-    );
+    options?: { signal?: AbortSignal }
+  ): Promise<unknown> {
+    return this.memories.deleteMany({ body: memoryIDs }, options);
   }
 
-  deletePath<Rsp>(path: string, opts?: PromiseOrValue<RequestOptions>): APIPromise<Rsp> {
-    return super.delete(path, opts);
-  }
-
-  override delete<Rsp>(path: RequestPath, opts?: PromiseOrValue<RequestOptions>): APIPromise<Rsp>;
-  override delete(memoryID: string, opts?: PromiseOrValue<RequestOptions>): APIPromise<boolean>;
-  override delete(memoryIDs: string[]): APIPromise<MemoryDeleteManyResponse>;
-  override delete<Rsp>(path: string, opts?: PromiseOrValue<RequestOptions>): APIPromise<Rsp>;
-  override delete(
-    pathOrMemoryIDs: string | string[],
-    opts?: PromiseOrValue<RequestOptions>,
-  ): APIPromise<unknown> {
+  /**
+   * Polymorphic delete: dispatches based on argument type.
+   * - `delete("/some/path")` -> raw HTTP DELETE (escape hatch; not implemented)
+   * - `delete("memory-id")` -> deleteMemory
+   * - `delete(["id1", "id2"])` -> deleteMemories (bulk)
+   */
+  async delete(
+    pathOrMemoryIDs: RequestPath | string | string[],
+    options?: { signal?: AbortSignal }
+  ): Promise<unknown> {
     if (Array.isArray(pathOrMemoryIDs)) {
-      return this.deleteMemories(pathOrMemoryIDs, opts);
+      return this.deleteMemories(pathOrMemoryIDs, options);
     }
-
     if (isRequestPath(pathOrMemoryIDs)) {
-      return super.delete(pathOrMemoryIDs, opts);
+      throw new Error(
+        `delete("${pathOrMemoryIDs}") raw-path escape hatch is not implemented in this SDK yet`
+      );
     }
-
-    return this.deleteMemory(pathOrMemoryIDs, opts);
+    return this.deleteMemory(pathOrMemoryIDs, options);
   }
 }
 
+// ---------- helpers ----------
+
 function normalizeAuthOptions(options: ClientOptions): ClientOptions {
-  if (options.apiKey && options.accessToken == null && !looksLikeNebulaAPIKey(options.apiKey)) {
-    return { ...options, apiKey: null, accessToken: options.apiKey };
+  if (
+    options.apiKey != null &&
+    options.bearerToken == null &&
+    !looksLikeNebulaAPIKey(options.apiKey)
+  ) {
+    return { ...options, apiKey: undefined, bearerToken: options.apiKey };
   }
   return options;
 }
@@ -330,88 +290,88 @@ function normalizeAuthOptions(options: ClientOptions): ClientOptions {
 function normalizeClientOptions(options: CompatClientOptions): ClientOptions {
   const {
     api_key: apiKeyAlias,
-    baseUrl,
-    base_url: baseURLAlias,
+    apiKey,
+    baseUrl: baseUrlAlias,
+    baseURL: baseURLCapAlias,
+    base_url: baseUrlSnakeAlias,
+    timeout: timeoutAlias,
     bearerToken,
     bearer_token: bearerTokenAlias,
+    accessToken,
+    access_token: accessTokenAlias,
     ...rest
   } = options;
+  const restClientOptions: ClientOptions = rest;
   return {
-    ...rest,
-    apiKey: firstDefined(rest.apiKey, apiKeyAlias),
-    accessToken: firstDefined(rest.accessToken, bearerToken, bearerTokenAlias),
-    baseURL: firstDefined(rest.baseURL, baseUrl, baseURLAlias),
+    ...restClientOptions,
+    apiKey: firstDefined(apiKey, apiKeyAlias) ?? undefined,
+    bearerToken:
+      firstDefined(bearerToken, bearerTokenAlias, accessToken, accessTokenAlias) ?? undefined,
+    baseUrl:
+      firstDefined(
+        restClientOptions.baseUrl,
+        baseUrlAlias,
+        baseURLCapAlias,
+        baseUrlSnakeAlias
+      ) ?? undefined,
+    timeoutMs:
+      firstDefined(restClientOptions.timeoutMs, timeoutAlias) ?? undefined,
   };
 }
 
-function firstDefined<T>(...values: (T | undefined)[]): T | undefined {
+function firstDefined<T>(...values: (T | null | undefined)[]): T | null | undefined {
   return values.find((value) => value !== undefined);
 }
 
-function looksLikeNebulaAPIKey(token: string): boolean {
-  const [publicPart, rawPart, extra] = token.split('.');
-  return (
-    extra === undefined &&
-    publicPart !== undefined &&
-    rawPart !== undefined &&
-    rawPart.length > 0 &&
-    (publicPart.startsWith('key_') || publicPart.startsWith('neb_'))
-  );
+export function looksLikeNebulaAPIKey(token: string): boolean {
+  const parts = token.split(".");
+  if (parts.length !== 2) return false;
+  const [publicPart, rawPart] = parts;
+  return Boolean(rawPart) && (publicPart.startsWith("key_") || publicPart.startsWith("neb_"));
 }
 
-function toMemoryCreateParams(memory: MemoryCreateInput): MemoryCreateParams {
-  const collectionID = memory.collection_id ?? memory.collectionId;
-  const { collectionId: _collectionId, content, memory_id: _memoryID, ...rest } = memory;
-  const params = { ...rest } as MemoryCreateParams;
+function toMemoryCreateParams(memory: MemoryCreateInput): MemoryCreateBody {
+  const collectionID = memory.collection_id ?? memory.collectionId ?? undefined;
+  const { collectionId: _ignore, content, memory_id: _ignoreMemoryID, ...rest } = memory;
+  const params: Record<string, unknown> = { ...rest };
 
   if (collectionID !== undefined) {
     params.collection_id = collectionID;
   }
-
   if (content != null) {
-    if (typeof content === 'string') {
+    if (typeof content === "string") {
       params.raw_text = content;
     } else {
       params.content_parts = content;
     }
   }
-
-  if (params.messages && !params.engram_type) {
-    params.engram_type = 'conversation';
+  if (params.messages != null && !params.engram_type) {
+    params.engram_type = "conversation";
   }
-
-  return params;
+  return params as MemoryCreateBody;
 }
 
-function toMemoryAppendParams(memory: MemoryAppendInput): MemoryAppendParams {
-  const collectionID = memory.collection_id ?? memory.collectionId;
+function toMemoryAppendParams(memory: MemoryAppendInput): MemoryAppendBody {
+  const collectionID = memory.collection_id ?? memory.collectionId ?? undefined;
   if (!collectionID) {
-    throw new Error('collection_id is required when appending to an existing memory');
+    throw new Error("collection_id is required when appending to an existing memory");
   }
-
-  const {
-    collection_id: _collectionID,
-    collectionId: _collectionId,
-    memory_id: _memoryID,
-    content,
-    ...rest
-  } = memory;
-  const params: MemoryAppendParams = {
-    ...(rest as Omit<MemoryAppendParams, 'collection_id'>),
-    collection_id: collectionID,
-  };
-
+  const params: Record<string, unknown> = { collection_id: collectionID };
+  for (const key of ["metadata", "ingestion_config", "ingestion_mode", "raw_text", "chunks", "messages"] as const) {
+    const value = memory[key as keyof MemoryAppendInput];
+    if (value != null) params[key] = value;
+  }
+  const content = (memory as MemoryCommonInput).content;
   if (content != null) {
-    if (typeof content === 'string') {
+    if (typeof content === "string") {
       params.raw_text = content;
-    } else if (Array.isArray(content) && content.every((item) => typeof item === 'string')) {
+    } else if (Array.isArray(content) && content.every((item) => typeof item === "string")) {
       params.chunks = content;
     } else if (Array.isArray(content)) {
-      params.messages = content as unknown as NonNullable<MemoryAppendParams['messages']>;
+      params.messages = content;
     }
   }
-
-  return params;
+  return params as MemoryAppendBody;
 }
 
 function unwrap<T>(promise: PromiseLike<T>): Promise<ResultsOf<T>> {
@@ -419,41 +379,34 @@ function unwrap<T>(promise: PromiseLike<T>): Promise<ResultsOf<T>> {
 }
 
 function unwrapResults<T>(response: T): unknown {
-  return typeof response === 'object' && response !== null && 'results' in response ?
-      (response as { results: unknown }).results
-    : response;
+  if (response !== null && typeof response === "object" && "results" in response) {
+    return (response as { results: unknown }).results;
+  }
+  return response;
 }
 
 function extractID(value: unknown): string {
-  if (typeof value === 'object' && value !== null) {
+  if (typeof value === "object" && value !== null) {
     const record = value as Record<string, unknown>;
     const id =
-      record['id'] ?? record['memory_id'] ?? record['engram_id'] ?? record['ephemeral_collection_id'];
-    if (typeof id === 'string') {
-      return id;
-    }
+      record["id"] ?? record["memory_id"] ?? record["engram_id"] ?? record["ephemeral_collection_id"];
+    if (typeof id === "string") return id;
   }
-  throw new Error('Nebula memory create response did not include an id');
+  throw new Error("Nebula memory create response did not include an id");
 }
 
-function isMemoryCreateResult(value: unknown): value is MemoryCreateResult {
-  return typeof value === 'object' && value !== null && 'snapshot' in value;
+function isSnapshotResult(value: unknown): value is { snapshot?: SnapshotEnvelopeOutput } {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "snapshot" in (value as Record<string, unknown>)
+  );
 }
 
 function arrayify(value: string | string[]): string[] {
   return Array.isArray(value) ? value : [value];
 }
 
-function collectionAffinityHeaders(collectionIDs?: string[]) {
-  if (!collectionIDs?.length) {
-    return undefined;
-  }
-  return {
-    'X-Nebula-Collection-Id':
-      collectionIDs.length === 1 ? collectionIDs[0] : [...collectionIDs].sort().join(','),
-  };
-}
-
 function isRequestPath(value: string): boolean {
-  return value.startsWith('/') || /^https?:\/\//i.test(value);
+  return value.startsWith("/") || /^https?:\/\//i.test(value);
 }
