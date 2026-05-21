@@ -1,10 +1,31 @@
-# This workflow is triggered when a GitHub release is created.
-# It can also be run manually to re-publish to NPM in case it failed for some reason.
-# You can run this workflow by navigating to https://www.github.com/nebula-agi/nebula-typescript/actions/workflows/publish-npm.yml
+# Publish @nebula-ai/sdk to npm. Triggered by `release: published` (created
+# by the nebula-sdk-bot GitHub App in release-please.yml), or manually via
+# workflow_dispatch for re-publish recovery.
+#
+# Authentication is npm OIDC trusted publishing — no NPM_TOKEN secret.
+# The trusted publisher must be configured on npmjs.com for the
+# `@nebula-ai/sdk` package with:
+#   - Org: zeroset-inc
+#   - Repo: nebula-typescript
+#   - Workflow filename: publish-npm.yml
+#   - Environment: release
+#
+# OIDC publishing requires npm 11.5+; setup-node ships an older npm, so
+# we install npm@11.6.2 explicitly into a side directory and point
+# `npm publish` at that binary.
+#
+# Provenance attestations: `--provenance` makes npm sign the package with
+# a GitHub Actions OIDC token, producing an attestation that npm displays
+# as "Built and signed on GitHub Actions" on the package page.
+#
+# Synced from nebula-sdks/custom/downstream-ts/.github/workflows/publish-npm.yml
+# by the upstream nebula-sdk-sync.yml workflow. Edit the template, not the
+# downstream copy.
+
 name: Publish NPM
+
 on:
   workflow_dispatch:
-
   release:
     types: [published]
 
@@ -12,26 +33,30 @@ jobs:
   publish:
     name: publish
     runs-on: ubuntu-latest
+    environment: release
     permissions:
       contents: read
-      id-token: write
-    environment: release
-
+      id-token: write # OIDC trusted publishing + provenance attestation
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
-      - name: Set up Node
-        uses: actions/setup-node@v3
+      - uses: oven-sh/setup-bun@v2
         with:
-          node-version: '20'
+          bun-version: "1.3.11"
 
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
+      - name: Install
+        run: bun install
 
-      - name: Install dependencies
-        run: |
-          pnpm install
+      - name: Build dist/
+        run: bun run build
 
-      - name: Publish to NPM
-        run: |
-          bash ./bin/publish-npm
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install npm@11.6.2 (required for OIDC trusted publishing)
+        run: npm install --prefix ../oidc-npm npm@11.6.2
+
+      - name: Publish to npm with provenance via OIDC
+        run: ../oidc-npm/node_modules/.bin/npm publish --provenance --access public
