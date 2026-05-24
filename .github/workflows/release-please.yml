@@ -1,0 +1,41 @@
+# Opens / maintains a release PR that bumps package.json + CHANGELOG.md
+# from Conventional Commits on main. Merging the release PR creates a
+# tagged GitHub Release; that release event triggers publish-npm.yml,
+# which publishes to npm via the existing OIDC trusted publisher.
+#
+# release-please-action runs under a GitHub App installation token
+# (`nebula-sdk-bot`) rather than GITHUB_TOKEN, because events created by
+# GITHUB_TOKEN do not trigger downstream workflows (recursion guard). The
+# App identity is what fires the `release: published` event that
+# publish-npm.yml listens for.
+#
+# Synced from nebula-sdks/custom/downstream-ts/.github/workflows/release-please.yml
+# by the upstream nebula-sdk-sync.yml workflow. Edit the template, not the
+# downstream copy.
+
+name: release-please
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/create-github-app-token@v2
+        id: app-token
+        with:
+          app-id: ${{ vars.NEBULA_SDK_BOT_APP_ID }}
+          private-key: ${{ secrets.NEBULA_SDK_BOT_PRIVATE_KEY }}
+
+      - uses: googleapis/release-please-action@v4
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
