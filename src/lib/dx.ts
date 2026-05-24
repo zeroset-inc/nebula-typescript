@@ -56,6 +56,7 @@ export interface MemoryCommonInput {
 }
 
 export interface MemoryCreateInput extends MemoryCommonInput {
+  kind?: Schemas["EngramKind"] | null;
   name?: string | null;
   speaker_id?: string | null;
   speaker_name?: string | null;
@@ -345,8 +346,8 @@ function toMemoryCreateParams(memory: MemoryCreateInput): MemoryCreateBody {
       params.content_parts = content;
     }
   }
-  if (params.messages != null && !params.engram_type) {
-    params.engram_type = "conversation";
+  if (params.messages != null && !params.kind) {
+    params.kind = "conversation";
   }
   return params as MemoryCreateBody;
 }

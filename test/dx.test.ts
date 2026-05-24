@@ -82,6 +82,19 @@ describe("DX layer", () => {
     expect(calls[0].body).toMatchObject({ raw_text: "shorthand" });
   });
 
+  test("storeMemory(messages) sets kind='conversation' and omits engram_type", async () => {
+    const { fetchImpl, calls } = makeMockFetch(() =>
+      jsonResponse(200, { results: { id: "mem_conv" } })
+    );
+    const client = new Nebula({ baseUrl: "https://api.example.com", fetchImpl });
+    await client.storeMemory({
+      collection_id: "c1",
+      messages: [{ role: "user", content: "hi" }],
+    });
+    expect(calls[0].body).toMatchObject({ kind: "conversation" });
+    expect((calls[0].body as Record<string, unknown>).engram_type).toBeUndefined();
+  });
+
   test("search returns unwrapped results", async () => {
     const { fetchImpl } = makeMockFetch(() =>
       jsonResponse(200, { results: { entities: [], relationships: [] } })
