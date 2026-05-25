@@ -47,10 +47,17 @@ a `memory_id` is present); prefer the resource methods for everything else.
 
 ## Auth
 
-The constructor accepts both `apiKey` / `bearerToken` (camelCase) and the
-snake_case aliases `api_key` / `access_token`. If you pass an API key that
-doesn't look like a Nebula key (not prefixed with `key_` or `neb_`), the
-DX layer automatically routes it through the bearer-token header instead.
+Pass either `apiKey` (for Nebula API keys) or `bearerToken` (for JWTs)
+when constructing the client. If you pass an opaque-looking token via
+`apiKey` (one that isn't prefixed with `key_` or `neb_`), the DX layer
+automatically routes it through the `Authorization: Bearer` header
+instead — handy when your app exchanges a workspace token for the SDK
+and doesn't want to think about which header to use.
+
+```ts
+new Nebula({ apiKey: process.env.NEBULA_API_KEY });
+new Nebula({ bearerToken: process.env.NEBULA_BEARER_TOKEN });
+```
 
 ## Errors
 
