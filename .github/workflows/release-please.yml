@@ -1,7 +1,16 @@
 # Opens / maintains a release PR that bumps package.json + CHANGELOG.md
 # from Conventional Commits on main. Merging the release PR creates a
 # tagged GitHub Release; that release event triggers publish-npm.yml,
-# which publishes to npm via the existing OIDC trusted publisher.
+# which routes by version: pre-release → `next` dist-tag, stable → `latest`.
+#
+# Default behaviour: ordinary commits land on main → release-please opens
+# a pre-release PR (e.g. `release: 1.6.0-rc.1`). Pre-launch posture; lets
+# us iterate without burning a stable semver number per change.
+#
+# Promotion to stable: dispatch this workflow manually with `release-as`
+# set to the target version (e.g. `1.6.0`). release-please opens a
+# release PR pinned to that exact version; merging cuts the stable tag,
+# which publish-npm.yml routes to `latest`.
 #
 # release-please-action runs under a GitHub App installation token
 # (`nebula-sdk-bot`) rather than GITHUB_TOKEN, because events created by
@@ -20,6 +29,11 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      release-as:
+        description: "Pin the next release to this exact version (e.g. 1.6.0 to promote the active RC to stable). Leave blank for the default RC bump."
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -33,6 +47,26 @@ jobs:
         with:
           app-id: ${{ vars.NEBULA_SDK_BOT_APP_ID }}
           private-key: ${{ secrets.NEBULA_SDK_BOT_PRIVATE_KEY }}
+
+      # When a stable promotion is requested, push a trailer-bearing
+      # marker commit to main so release-please picks `release-as` up.
+      # The actual config-file already drives the default RC bump; this
+      # step only runs on workflow_dispatch with an explicit version.
+      - name: Push release-as marker commit
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.release-as != '' }}
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          RELEASE_AS: ${{ inputs.release-as }}
+        run: |
+          set -euo pipefail
+          git clone --depth=1 "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" promote
+          cd promote
+          git config user.name "nebula-sdk-bot"
+          git config user.email "sdk-bot@zeroset.com"
+          # Empty commit with the release-as trailer. release-please reads
+          # the trailer and overrides its computed version.
+          git commit --allow-empty -m "chore: promote to ${RELEASE_AS}" -m "Release-As: ${RELEASE_AS}"
+          git push origin main
 
       - uses: googleapis/release-please-action@v4
         with:

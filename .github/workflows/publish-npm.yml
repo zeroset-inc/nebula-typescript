@@ -2,6 +2,15 @@
 # by the nebula-sdk-bot GitHub App in release-please.yml), or manually via
 # workflow_dispatch for re-publish recovery.
 #
+# Channel routing:
+#   - Plain semver (1.6.0)                  → `--tag latest` (stable)
+#   - Pre-release semver (1.6.0-rc.1, etc.) → `--tag next`  (iteration)
+#
+# Consumers running `npm install @nebula-ai/sdk` get whatever `latest`
+# points to (stable only). Consumers opting in to the iteration channel
+# do `npm install @nebula-ai/sdk@next`. Caret ranges (`^1.6.0`) never
+# auto-pick pre-releases — semver excludes them unless explicitly named.
+#
 # Authentication is npm OIDC trusted publishing — no NPM_TOKEN secret.
 # The trusted publisher must be configured on npmjs.com for the
 # `@nebula-ai/sdk` package with:
@@ -58,5 +67,21 @@ jobs:
       - name: Install npm@11.6.2 (required for OIDC trusted publishing)
         run: npm install --prefix ../oidc-npm npm@11.6.2
 
+      - name: Resolve dist-tag from version
+        id: tag
+        run: |
+          version=$(node -p "require('./package.json').version")
+          # Semver pre-release versions contain a `-` (e.g. 1.6.0-rc.1).
+          # Plain semver releases (1.6.0) go to `latest`; everything else
+          # goes to `next` so `npm install <pkg>` doesn't auto-pick them.
+          if [[ "$version" == *-* ]]; then
+            tag=next
+          else
+            tag=latest
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "Publishing $version with --tag $tag"
+
       - name: Publish to npm with provenance via OIDC
-        run: ../oidc-npm/node_modules/.bin/npm publish --provenance --access public
+        run: ../oidc-npm/node_modules/.bin/npm publish --provenance --access public --tag ${{ steps.tag.outputs.tag }}
