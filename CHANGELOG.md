@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.0](https://github.com/zeroset-inc/nebula-typescript/compare/v1.4.0...v1.5.0) (2026-05-25)
+
+
+### Features
+
+* regenerate from nebula@b90fb4a ([#24](https://github.com/zeroset-inc/nebula-typescript/issues/24)) ([3e015dd](https://github.com/zeroset-inc/nebula-typescript/commit/3e015ddcb6a80e57fc83b199f3c2a515f9e1b404))
+
 ## [1.4.0](https://github.com/zeroset-inc/nebula-typescript/compare/v1.3.0...v1.4.0) (2026-05-24)
 
 
