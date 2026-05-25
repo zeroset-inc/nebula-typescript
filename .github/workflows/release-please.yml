@@ -48,28 +48,14 @@ jobs:
           app-id: ${{ vars.NEBULA_SDK_BOT_APP_ID }}
           private-key: ${{ secrets.NEBULA_SDK_BOT_PRIVATE_KEY }}
 
-      # When a stable promotion is requested, push a trailer-bearing
-      # marker commit to main so release-please picks `release-as` up.
-      # The actual config-file already drives the default RC bump; this
-      # step only runs on workflow_dispatch with an explicit version.
-      - name: Push release-as marker commit
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.release-as != '' }}
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          RELEASE_AS: ${{ inputs.release-as }}
-        run: |
-          set -euo pipefail
-          git clone --depth=1 "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" promote
-          cd promote
-          git config user.name "nebula-sdk-bot"
-          git config user.email "sdk-bot@zeroset.com"
-          # Empty commit with the release-as trailer. release-please reads
-          # the trailer and overrides its computed version.
-          git commit --allow-empty -m "chore: promote to ${RELEASE_AS}" -m "Release-As: ${RELEASE_AS}"
-          git push origin main
-
       - uses: googleapis/release-please-action@v4
         with:
           token: ${{ steps.app-token.outputs.token }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+          # When set via workflow_dispatch, pins the next release to this
+          # exact version. Use `<version>-rc.0` to start a new iteration
+          # cycle; use `<version>` (plain semver) to promote the active
+          # RC to stable. Empty / push-triggered runs ignore this input
+          # and let the config + commit history drive the bump.
+          release-as: ${{ inputs.release-as }}
