@@ -7,10 +7,19 @@ health.
 ## Install
 
 ```bash
+# Stable
 npm install @nebula-ai/sdk
-# or
-bun add @nebula-ai/sdk
+# Preview (next iteration, RC versions)
+npm install @nebula-ai/sdk@next
 ```
+
+> **Pre-launch:** The public surface is still being shaped. Plain
+> semver releases (`1.6.0`, `1.7.0`, …) are stable and published to
+> the `latest` dist-tag. Iteration happens on the `next` dist-tag
+> as pre-release versions (`1.6.0-rc.1`, `-rc.2`, …). Caret ranges
+> like `^1.6.0` never auto-pick pre-releases — semver excludes them
+> unless you explicitly opt in. Stable consumers are insulated from
+> the iteration channel by default.
 
 ## Quick start
 
