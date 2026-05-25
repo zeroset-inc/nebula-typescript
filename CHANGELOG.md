@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.6.0-rc.0](https://github.com/zeroset-inc/nebula-typescript/compare/v1.5.0...v1.6.0-rc.0) (2026-05-25)
+
+
+### Features
+
+* regenerate from nebula@42d478d ([#29](https://github.com/zeroset-inc/nebula-typescript/issues/29)) ([d77a1f6](https://github.com/zeroset-inc/nebula-typescript/commit/d77a1f6a7f430cc46c3e7573156a45c16e699134))
+* regenerate from nebula@482822c ([#31](https://github.com/zeroset-inc/nebula-typescript/issues/31)) ([d6fe88d](https://github.com/zeroset-inc/nebula-typescript/commit/d6fe88d015bf19364f1b55d1d290f0e373b20bbe))
+* regenerate from nebula@73d86ef ([#32](https://github.com/zeroset-inc/nebula-typescript/issues/32)) ([caf4a43](https://github.com/zeroset-inc/nebula-typescript/commit/caf4a439574703da3678427edc7d99dc73b3a0f8))
+
+
+### Chores
+
+* move prerelease config under packages."." ([98073ac](https://github.com/zeroset-inc/nebula-typescript/commit/98073ace2977bc3783266049c61592005e006526))
+* promote to 1.6.0-rc.0 ([4c36e90](https://github.com/zeroset-inc/nebula-typescript/commit/4c36e90f3cc9409e65b4b69233044e8d021b7a42))
+* switch release-please to RC prerelease mode ([d276ef6](https://github.com/zeroset-inc/nebula-typescript/commit/d276ef6c00e0ef5b5b4e92b6d88313367a5f3a33))
+
 ## [1.5.0](https://github.com/zeroset-inc/nebula-typescript/compare/v1.4.0...v1.5.0) (2026-05-25)
 
 
