@@ -25,8 +25,8 @@ export class ConnectorsResource {
   body: components["schemas"]["ConnectRequest"];
 },
     options?: RequestOptions,
-  ): Promise<components["schemas"]["WrappedConnectorConnectResponse"]> {
-    return this.core.request<components["schemas"]["WrappedConnectorConnectResponse"]>({
+  ): Promise<components["schemas"]["ConnectorConnectResponse"]> {
+    const response = (await this.core.request<components["schemas"]["WrappedConnectorConnectResponse"]>({
       method: "POST",
       path: "/v1/connectors/{provider}/connect",
       pathParams: { provider: params.provider },
@@ -34,7 +34,8 @@ export class ConnectorsResource {
       body: params.body,
       idempotent: false,
       signal: options?.signal,
-    });
+    })) as { results: components["schemas"]["ConnectorConnectResponse"] };
+    return response.results;
   }
 
   /**
@@ -51,15 +52,16 @@ export class ConnectorsResource {
   deleteMemories?: boolean;
 },
     options?: RequestOptions,
-  ): Promise<components["schemas"]["WrappedConnectorDisconnectResponse"]> {
-    return this.core.request<components["schemas"]["WrappedConnectorDisconnectResponse"]>({
+  ): Promise<components["schemas"]["ConnectorDisconnectResponse"]> {
+    const response = (await this.core.request<components["schemas"]["WrappedConnectorDisconnectResponse"]>({
       method: "DELETE",
       path: "/v1/connectors/{connection_id}",
       pathParams: { connection_id: params.connectionId },
       query: { delete_memories: params.deleteMemories },
       idempotent: true,
       signal: options?.signal,
-    });
+    })) as { results: components["schemas"]["ConnectorDisconnectResponse"] };
+    return response.results;
   }
 
   /**
@@ -75,15 +77,16 @@ export class ConnectorsResource {
   collectionId: string;
 },
     options?: RequestOptions,
-  ): Promise<components["schemas"]["WrappedListOfConnectorConnectionResponse"]> {
-    return this.core.request<components["schemas"]["WrappedListOfConnectorConnectionResponse"]>({
+  ): Promise<Array<components["schemas"]["ConnectorConnectionResponse"]>> {
+    const response = (await this.core.request<components["schemas"]["WrappedListOfConnectorConnectionResponse"]>({
       method: "GET",
       path: "/v1/connectors",
       pathParams: {},
       query: { collection_id: params.collectionId },
       idempotent: true,
       signal: options?.signal,
-    });
+    })) as { results: Array<components["schemas"]["ConnectorConnectionResponse"]> };
+    return response.results;
   }
 
   /**
@@ -94,15 +97,16 @@ export class ConnectorsResource {
    * @operationId connectors.listProviders
    * @endpoint GET /v1/connectors/providers
    */
-  async listProviders(options?: RequestOptions): Promise<components["schemas"]["WrappedListOfStr"]> {
-    return this.core.request<components["schemas"]["WrappedListOfStr"]>({
+  async listProviders(options?: RequestOptions): Promise<Array<string>> {
+    const response = (await this.core.request<components["schemas"]["WrappedListOfStr"]>({
       method: "GET",
       path: "/v1/connectors/providers",
       pathParams: {},
       query: undefined,
       idempotent: true,
       signal: options?.signal,
-    });
+    })) as { results: Array<string> };
+    return response.results;
   }
 
   /**
@@ -116,15 +120,16 @@ export class ConnectorsResource {
   async retrieve(
     connectionId: string,
     options?: RequestOptions,
-  ): Promise<components["schemas"]["WrappedConnectorConnectionResponse"]> {
-    return this.core.request<components["schemas"]["WrappedConnectorConnectionResponse"]>({
+  ): Promise<components["schemas"]["ConnectorConnectionResponse"]> {
+    const response = (await this.core.request<components["schemas"]["WrappedConnectorConnectionResponse"]>({
       method: "GET",
       path: "/v1/connectors/{connection_id}",
       pathParams: { connection_id: connectionId },
       query: undefined,
       idempotent: true,
       signal: options?.signal,
-    });
+    })) as { results: components["schemas"]["ConnectorConnectionResponse"] };
+    return response.results;
   }
 
   /**
@@ -138,15 +143,16 @@ export class ConnectorsResource {
   async sync(
     connectionId: string,
     options?: RequestOptions,
-  ): Promise<components["schemas"]["WrappedConnectorSyncResponse"]> {
-    return this.core.request<components["schemas"]["WrappedConnectorSyncResponse"]>({
+  ): Promise<components["schemas"]["ConnectorSyncResponse"]> {
+    const response = (await this.core.request<components["schemas"]["WrappedConnectorSyncResponse"]>({
       method: "POST",
       path: "/v1/connectors/{connection_id}/sync",
       pathParams: { connection_id: connectionId },
       query: undefined,
       idempotent: true,
       signal: options?.signal,
-    });
+    })) as { results: components["schemas"]["ConnectorSyncResponse"] };
+    return response.results;
   }
 
 }

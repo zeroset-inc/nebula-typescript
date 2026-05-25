@@ -21,20 +21,19 @@ export class SnapshotsResource {
    * @endpoint POST /v1/device-memory/snapshot/export
    */
   async export(
-    params: {
-  body: components["schemas"]["SnapshotExportRequest"];
-},
+    body: components["schemas"]["SnapshotExportRequest"],
     options?: RequestOptions,
-  ): Promise<components["schemas"]["WrappedSnapshotEnvelope"]> {
-    return this.core.request<components["schemas"]["WrappedSnapshotEnvelope"]>({
+  ): Promise<components["schemas"]["SnapshotEnvelope-Output"]> {
+    const response = (await this.core.request<components["schemas"]["WrappedSnapshotEnvelope"]>({
       method: "POST",
       path: "/v1/device-memory/snapshot/export",
       pathParams: {},
       query: undefined,
-      body: params.body,
+      body: body,
       idempotent: true,
       signal: options?.signal,
-    });
+    })) as { results: components["schemas"]["SnapshotEnvelope-Output"] };
+    return response.results;
   }
 
   /**
@@ -47,20 +46,19 @@ export class SnapshotsResource {
    * @endpoint POST /v1/device-memory/snapshot/import
    */
   async import(
-    params: {
-  body: components["schemas"]["SnapshotImportRequest"];
-},
+    body: components["schemas"]["SnapshotImportRequest"],
     options?: RequestOptions,
-  ): Promise<components["schemas"]["WrappedSnapshotImportResult"]> {
-    return this.core.request<components["schemas"]["WrappedSnapshotImportResult"]>({
+  ): Promise<components["schemas"]["SnapshotImportResult"]> {
+    const response = (await this.core.request<components["schemas"]["WrappedSnapshotImportResult"]>({
       method: "POST",
       path: "/v1/device-memory/snapshot/import",
       pathParams: {},
       query: undefined,
-      body: params.body,
+      body: body,
       idempotent: false,
       signal: options?.signal,
-    });
+    })) as { results: components["schemas"]["SnapshotImportResult"] };
+    return response.results;
   }
 
 }

@@ -1,18 +1,20 @@
 // Handwritten Nebula DX layer.
 //
-// Carries only the methods that need real dispatch logic (storeMemory's
-// create-vs-append branch, polymorphic delete, search-affinity headers,
-// auth normalization, response-shape coercion to bool). The simple
-// unwrap/passthrough methods (getMemory, updateCollection, exportSnapshot,
-// listProviders, ...) are generated from
-// `nebula-sdks/config/dx-extensions.yaml` into `_dx_generated.ts`, which
-// this class extends via `NebulaDX`.
+// Carries only the methods that need real dispatch logic: storeMemory's
+// create-vs-append branch, bulk storeMemories with a concurrency cap,
+// positional connector helpers (connectProvider/listConnections/
+// disconnectConnection), and auth normalization.
+//
+// For everything else, use the resource methods directly. Resource
+// methods now return unwrapped values natively (the generator peels
+// the `{results: X}` wire envelope), so there's no separate auto-
+// generated unwrap layer to extend.
 //
 // Source of truth: nebula-sdks/custom/typescript/dx.ts
 // The generator copies this file into sdks/typescript/src/lib/dx.ts on every
 // `bun run generate`. Edit the source, not the copy.
 
-import { NebulaDX } from "./_dx_generated.ts";
+import { NebulaClient } from "../client.ts";
 import {
   type ClientOptions,
   type components,
@@ -22,25 +24,17 @@ type Schemas = components["schemas"];
 type SnapshotEnvelopeInput = Schemas["SnapshotEnvelope-Input"];
 type SnapshotEnvelopeOutput = Schemas["SnapshotEnvelope-Output"];
 
-type ResultsOf<T> = T extends { results: infer R } ? R : T;
-type RequestPath = `/${string}` | `http://${string}` | `https://${string}`;
-
 export type CompatClientOptions = ClientOptions & {
-  api_key?: string | null;
   apiKey?: string | null;
   baseUrl?: string | null;
-  // Stainless-shape alias with capital-URL casing. Existing frontend
-  // callers (CollectionService, MemoryService, PlaygroundService, etc.)
+  // Stainless-shape capital-U alias. Some internal callers
+  // (backend/local-websocket-server, backend/lambda/websocket-llm) still
   // pass `baseURL`; without this alias the value falls through unused
   // and the runtime defaults to api.zeroset.com.
   baseURL?: string | null;
-  base_url?: string | null;
   // Stainless-shape alias for `timeoutMs`. Same compat reason.
   timeout?: number | null;
-  accessToken?: string | null;
   bearerToken?: string | null;
-  bearer_token?: string | null;
-  access_token?: string | null;
 };
 
 export interface MemoryCommonInput {
@@ -56,6 +50,7 @@ export interface MemoryCommonInput {
 }
 
 export interface MemoryCreateInput extends MemoryCommonInput {
+  kind?: Schemas["EngramKind"] | null;
   name?: string | null;
   speaker_id?: string | null;
   speaker_name?: string | null;
@@ -76,7 +71,7 @@ export type MemoryInput = MemoryCreateInput | MemoryAppendInput;
 type MemoryCreateBody = Schemas["CreateMemoryRequest"];
 type MemoryAppendBody = Schemas["AppendMemoryRequest"];
 
-export class Nebula extends NebulaDX {
+export class Nebula extends NebulaClient {
   constructor(options: CompatClientOptions = {}) {
     super(normalizeAuthOptions(normalizeClientOptions(options)));
   }
@@ -98,11 +93,12 @@ export class Nebula extends NebulaDX {
       );
       return memoryID;
     }
-    const response = await this.memories.create(
-      { body: toMemoryCreateParams(memory as MemoryCreateInput) },
+    // `memories.create` now returns the unwrapped inner type directly
+    // (the generator peels the wire `{results: X}` envelope).
+    const result = await this.memories.create(
+      toMemoryCreateParams(memory as MemoryCreateInput),
       options
     );
-    const result = unwrapResults(response);
     if (isSnapshotResult(result)) {
       return (result.snapshot ?? result) as SnapshotEnvelopeOutput;
     }
@@ -150,38 +146,8 @@ export class Nebula extends NebulaDX {
       typeof query === "string" || Array.isArray(query)
         ? { collectionIds: arrayify(query) }
         : query;
-    return unwrap(this.memories.list(normalized as never, options));
+    return this.memories.list(normalized as never, options);
   }
-
-  /**
-   * Memory search shortcut: unwraps `results`. (Affinity-header injection
-   * is a planned enhancement; currently delegates straight to the resource.)
-   */
-  async search(
-    body: Schemas["MemorySearchRequest"],
-    options?: { signal?: AbortSignal }
-  ): Promise<unknown> {
-    return unwrap(this.memories.search({ body }, options));
-  }
-
-  /**
-   * deleteCollection coerces the wire {success: bool} envelope into a Python-
-   * style boolean return.
-   */
-  async deleteCollection(id: string, options?: { signal?: AbortSignal }): Promise<boolean> {
-    const response = await this.collections.delete(id, options);
-    const result = unwrapResults(response);
-    return Boolean((result as { success?: boolean }).success);
-  }
-
-  // Legacy aliases — "cluster" was the old name for "collection".
-  // Bound to inherited (generated) collection methods.
-  createCluster = this.createCollection;
-  getCluster = this.getCollection;
-  getClusterByName = this.getCollectionByName;
-  listClusters = this.listCollections;
-  updateCluster = this.updateCollection;
-  deleteCluster = this.deleteCollection;
 
   /**
    * Positional `connectProvider(provider, collectionID, config?)` — wraps the
@@ -197,7 +163,7 @@ export class Nebula extends NebulaDX {
       collection_id: collectionID,
       ...(config !== undefined ? { config } : {}),
     } as Schemas["ConnectRequest"];
-    return unwrap(this.connectors.connect({ provider, body }, options));
+    return this.connectors.connect({ provider, body }, options);
   }
 
   /** Positional listConnections(collectionID) — wraps the query wrapper. */
@@ -205,9 +171,7 @@ export class Nebula extends NebulaDX {
     collectionID: string,
     options?: { signal?: AbortSignal }
   ): Promise<unknown> {
-    return unwrap(
-      this.connectors.list({ collectionId: collectionID } as never, options)
-    );
+    return this.connectors.list({ collectionId: collectionID } as never, options);
   }
 
   /** Positional disconnect(connectionID, deleteMemories?). */
@@ -216,11 +180,9 @@ export class Nebula extends NebulaDX {
     deleteMemories = false,
     options?: { signal?: AbortSignal }
   ): Promise<unknown> {
-    return unwrap(
-      this.connectors.disconnect(
-        { connectionId: connectionID, deleteMemories } as never,
-        options
-      )
+    return this.connectors.disconnect(
+      { connectionId: connectionID, deleteMemories } as never,
+      options
     );
   }
 
@@ -230,48 +192,12 @@ export class Nebula extends NebulaDX {
     deleteMemories = false,
     options?: { signal?: AbortSignal }
   ): Promise<unknown> {
-    return unwrap(
-      this.connectors.disconnect(
-        { connectionId: connectionID, deleteMemories } as never,
-        options
-      )
+    return this.connectors.disconnect(
+      { connectionId: connectionID, deleteMemories } as never,
+      options
     );
   }
 
-  /** Single-id delete; coerces 204 to boolean true. */
-  async deleteMemory(memoryID: string, options?: { signal?: AbortSignal }): Promise<boolean> {
-    await this.memories.delete(memoryID, options);
-    return true;
-  }
-
-  /** Bulk delete by ids. */
-  async deleteMemories(
-    memoryIDs: string[],
-    options?: { signal?: AbortSignal }
-  ): Promise<unknown> {
-    return this.memories.deleteMany({ body: memoryIDs }, options);
-  }
-
-  /**
-   * Polymorphic delete: dispatches based on argument type.
-   * - `delete("/some/path")` -> raw HTTP DELETE (escape hatch; not implemented)
-   * - `delete("memory-id")` -> deleteMemory
-   * - `delete(["id1", "id2"])` -> deleteMemories (bulk)
-   */
-  async delete(
-    pathOrMemoryIDs: RequestPath | string | string[],
-    options?: { signal?: AbortSignal }
-  ): Promise<unknown> {
-    if (Array.isArray(pathOrMemoryIDs)) {
-      return this.deleteMemories(pathOrMemoryIDs, options);
-    }
-    if (isRequestPath(pathOrMemoryIDs)) {
-      throw new Error(
-        `delete("${pathOrMemoryIDs}") raw-path escape hatch is not implemented in this SDK yet`
-      );
-    }
-    return this.deleteMemory(pathOrMemoryIDs, options);
-  }
 }
 
 // ---------- helpers ----------
@@ -289,31 +215,20 @@ function normalizeAuthOptions(options: ClientOptions): ClientOptions {
 
 function normalizeClientOptions(options: CompatClientOptions): ClientOptions {
   const {
-    api_key: apiKeyAlias,
     apiKey,
     baseUrl: baseUrlAlias,
     baseURL: baseURLCapAlias,
-    base_url: baseUrlSnakeAlias,
     timeout: timeoutAlias,
     bearerToken,
-    bearer_token: bearerTokenAlias,
-    accessToken,
-    access_token: accessTokenAlias,
     ...rest
   } = options;
   const restClientOptions: ClientOptions = rest;
   return {
     ...restClientOptions,
-    apiKey: firstDefined(apiKey, apiKeyAlias) ?? undefined,
-    bearerToken:
-      firstDefined(bearerToken, bearerTokenAlias, accessToken, accessTokenAlias) ?? undefined,
+    apiKey: apiKey ?? undefined,
+    bearerToken: bearerToken ?? undefined,
     baseUrl:
-      firstDefined(
-        restClientOptions.baseUrl,
-        baseUrlAlias,
-        baseURLCapAlias,
-        baseUrlSnakeAlias
-      ) ?? undefined,
+      firstDefined(restClientOptions.baseUrl, baseUrlAlias, baseURLCapAlias) ?? undefined,
     timeoutMs:
       firstDefined(restClientOptions.timeoutMs, timeoutAlias) ?? undefined,
   };
@@ -345,8 +260,8 @@ function toMemoryCreateParams(memory: MemoryCreateInput): MemoryCreateBody {
       params.content_parts = content;
     }
   }
-  if (params.messages != null && !params.engram_type) {
-    params.engram_type = "conversation";
+  if (params.messages != null && !params.kind) {
+    params.kind = "conversation";
   }
   return params as MemoryCreateBody;
 }
@@ -374,17 +289,6 @@ function toMemoryAppendParams(memory: MemoryAppendInput): MemoryAppendBody {
   return params as MemoryAppendBody;
 }
 
-function unwrap<T>(promise: PromiseLike<T>): Promise<ResultsOf<T>> {
-  return Promise.resolve(promise).then((response) => unwrapResults(response) as ResultsOf<T>);
-}
-
-function unwrapResults<T>(response: T): unknown {
-  if (response !== null && typeof response === "object" && "results" in response) {
-    return (response as { results: unknown }).results;
-  }
-  return response;
-}
-
 function extractID(value: unknown): string {
   if (typeof value === "object" && value !== null) {
     const record = value as Record<string, unknown>;
@@ -405,8 +309,4 @@ function isSnapshotResult(value: unknown): value is { snapshot?: SnapshotEnvelop
 
 function arrayify(value: string | string[]): string[] {
   return Array.isArray(value) ? value : [value];
-}
-
-function isRequestPath(value: string): boolean {
-  return value.startsWith("/") || /^https?:\/\//i.test(value);
 }

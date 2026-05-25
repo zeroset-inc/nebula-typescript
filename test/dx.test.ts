@@ -82,30 +82,50 @@ describe("DX layer", () => {
     expect(calls[0].body).toMatchObject({ raw_text: "shorthand" });
   });
 
-  test("search returns unwrapped results", async () => {
+  test("storeMemory(messages) sets kind='conversation' and omits engram_type", async () => {
+    const { fetchImpl, calls } = makeMockFetch(() =>
+      jsonResponse(200, { results: { id: "mem_conv" } })
+    );
+    const client = new Nebula({ baseUrl: "https://api.example.com", fetchImpl });
+    await client.storeMemory({
+      collection_id: "c1",
+      messages: [{ role: "user", content: "hi" }],
+    });
+    expect(calls[0].body).toMatchObject({ kind: "conversation" });
+    expect((calls[0].body as Record<string, unknown>).engram_type).toBeUndefined();
+  });
+
+  test("memories.search peels the inline-anyOf `{results: X}` envelope", async () => {
     const { fetchImpl } = makeMockFetch(() =>
       jsonResponse(200, { results: { entities: [], relationships: [] } })
     );
     const client = new Nebula({ baseUrl: "https://api.example.com", fetchImpl });
-    const result = await client.search({ query: "find this" } as never);
+    const result = await client.memories.search({ query: "find this" } as never);
+    // Wire envelope `{results: X}` peeled by the generator (the response
+    // schema is an inline anyOf of Wrapped* variants — each variant
+    // unwraps to its inner type).
     expect(result).toEqual({ entities: [], relationships: [] });
   });
 
-  test("delete(string) calls memories.delete", async () => {
-    const { fetchImpl, calls } = makeMockFetch(() => jsonResponse(204, null));
+  test("memories.delete hits DELETE path and returns the unwrapped success body", async () => {
+    const { fetchImpl, calls } = makeMockFetch(() =>
+      jsonResponse(200, { results: { success: true } })
+    );
     const client = new Nebula({ baseUrl: "https://api.example.com", fetchImpl });
-    const ok = await client.delete("mem_to_delete");
-    expect(ok).toBe(true);
+    const result = (await client.memories.delete("mem_to_delete")) as { success?: boolean };
     expect(calls[0].method).toBe("DELETE");
     expect(calls[0].url).toBe("https://api.example.com/v1/memories/mem_to_delete");
+    // Wire envelope was {results: {success: true}}; the generator peeled
+    // it so callers see {success: true} directly.
+    expect(result.success).toBe(true);
   });
 
-  test("delete(string[]) calls memories.deleteMany with body array", async () => {
+  test("memories.deleteMany takes the id list as the positional body", async () => {
     const { fetchImpl, calls } = makeMockFetch(() =>
       jsonResponse(200, { results: { succeeded: 2, failed: 0 } })
     );
     const client = new Nebula({ baseUrl: "https://api.example.com", fetchImpl });
-    await client.delete(["m1", "m2"]);
+    await client.memories.deleteMany(["m1", "m2"]);
     expect(calls[0].method).toBe("POST");
     expect(calls[0].url).toBe("https://api.example.com/v1/memories/delete");
     expect(calls[0].body).toEqual(["m1", "m2"]);
@@ -118,18 +138,6 @@ describe("DX layer", () => {
     expect(looksLikeNebulaAPIKey("key_abc")).toBe(false);
   });
 
-  test("compat options: api_key alias is accepted", async () => {
-    const { fetchImpl, calls } = makeMockFetch(() => jsonResponse(200, { results: {} }));
-    const client = new Nebula({
-      baseUrl: "https://api.example.com",
-      api_key: "key_real.token",
-      fetchImpl,
-    } as never);
-    await client.getMemory("m1");
-    expect(calls[0].headers["x-api-key"]).toBe("key_real.token");
-    expect(calls[0].headers.authorization).toBeUndefined();
-  });
-
   test("auth normalization: non-key-shaped token routes to bearer", async () => {
     const { fetchImpl, calls } = makeMockFetch(() => jsonResponse(200, { results: {} }));
     const client = new Nebula({
@@ -137,18 +145,21 @@ describe("DX layer", () => {
       apiKey: "eyJhbGciOiJIUzI1NiJ9.opaquebearer",
       fetchImpl,
     });
-    await client.getMemory("m1");
+    await client.memories.retrieve("m1");
     expect(calls[0].headers.authorization).toBe("Bearer eyJhbGciOiJIUzI1NiJ9.opaquebearer");
     expect(calls[0].headers["x-api-key"]).toBeUndefined();
   });
 
-  test("deleteCollection unwraps and coerces to boolean", async () => {
+  test("collections.delete returns the unwrapped {success: bool} body", async () => {
     const { fetchImpl } = makeMockFetch(() =>
       jsonResponse(200, { results: { success: true } })
     );
     const client = new Nebula({ baseUrl: "https://api.example.com", fetchImpl });
-    const ok = await client.deleteCollection("c1");
-    expect(ok).toBe(true);
+    const resp = (await client.collections.delete("c1")) as { success?: boolean };
+    // Wire envelope `{results: {success: true}}` peeled by the generator
+    // → caller sees `{success: true}` directly. No bool coercion (that
+    // was a DX-layer concern; the SDK is wire-faithful otherwise).
+    expect(resp.success).toBe(true);
   });
 
   test("listMemories(string) becomes collectionIds array filter", async () => {
@@ -158,11 +169,5 @@ describe("DX layer", () => {
     const client = new Nebula({ baseUrl: "https://api.example.com", fetchImpl });
     await client.listMemories("collection-abc");
     expect(calls[0].url).toContain("collection_ids=collection-abc");
-  });
-
-  test("legacy cluster aliases are bound", () => {
-    const client = new Nebula({ baseUrl: "https://api.example.com" });
-    expect(client.createCluster).toBe(client.createCollection);
-    expect(client.deleteCluster).toBe(client.deleteCollection);
   });
 });
