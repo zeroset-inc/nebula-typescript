@@ -71,6 +71,15 @@ jobs:
         id: tag
         run: |
           version=$(node -p "require('./package.json').version")
+          # Sentinel guard: in-repo main carries `0.0.0-from-source` until
+          # release-please bumps it. The `release:published` trigger checks
+          # out the tag (real version, safe); `workflow_dispatch` defaults
+          # to the dispatched ref — if someone dispatches from main without
+          # picking a tag, we'd otherwise OIDC-publish the sentinel. Bail.
+          if [[ "$version" == *from-source* ]]; then
+            echo "::error::Refusing to publish sentinel version '$version'. Dispatch this workflow against a release tag (e.g. v1.6.0-rc.0), not main."
+            exit 1
+          fi
           # Semver pre-release versions contain a `-` (e.g. 1.6.0-rc.1).
           # Plain semver releases (1.6.0) go to `latest`; everything else
           # goes to `next` so `npm install <pkg>` doesn't auto-pick them.
