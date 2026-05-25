@@ -19,15 +19,16 @@ export class ClientResource {
    * @operationId client.health
    * @endpoint GET /v1/health
    */
-  async health(options?: RequestOptions): Promise<components["schemas"]["WrappedGenericMessageResponse"]> {
-    return this.core.request<components["schemas"]["WrappedGenericMessageResponse"]>({
+  async health(options?: RequestOptions): Promise<components["schemas"]["GenericMessageResponse"]> {
+    const response = (await this.core.request<components["schemas"]["WrappedGenericMessageResponse"]>({
       method: "GET",
       path: "/v1/health",
       pathParams: {},
       query: undefined,
       idempotent: true,
       signal: options?.signal,
-    });
+    })) as { results: components["schemas"]["GenericMessageResponse"] };
+    return response.results;
   }
 
 }

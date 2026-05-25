@@ -62,24 +62,25 @@ async function main(): Promise<void> {
     "list_memories returns applied_wal_seq (RYW token)"
   );
 
-  // 3. Create a throwaway collection — exercises POST + non-cursor envelope
+  // 3. Create a throwaway collection — exercises POST + envelope unwrap
   const created = (await client.collections.create({
-    body: { name: `e2e-sdk-${Date.now()}` },
-  })) as { results?: { id?: string } };
-  const collectionId = created.results?.id;
-  assert(typeof collectionId === "string", "collections.create returns results.id: string");
+    name: `e2e-sdk-${Date.now()}`,
+  } as never)) as { id?: string };
+  const collectionId = created.id;
+  assert(typeof collectionId === "string", "collections.create returns id: string");
 
-  // 4. Retrieve the collection (path-param method) — exercises GET + envelope decode
+  // 4. Retrieve the collection (path-param method) — exercises GET + envelope unwrap
   const retrieved = (await client.collections.retrieve(collectionId!)) as {
-    results?: { id?: string; name?: string };
+    id?: string;
+    name?: string;
   };
-  assert(retrieved.results?.id === collectionId, "collections.retrieve returns the same id");
+  assert(retrieved.id === collectionId, "collections.retrieve returns the same id");
 
   // 5. Validation error envelope round-trip
   let validationCaught = false;
   try {
     // Force a 422 with an empty body
-    await client.collections.create({ body: { name: "" } as never });
+    await client.collections.create({ name: "" } as never);
   } catch (e) {
     validationCaught = true;
     if (e instanceof NebulaValidationError) {
@@ -106,12 +107,10 @@ async function main(): Promise<void> {
     let serverErrorObserved = false;
     try {
       await client.memories.create({
-        body: {
-          kind: "document",
-          collection_id: collectionId!,
-          raw_text: "e2e smoke test memory",
-        } as never,
-      });
+        kind: "document",
+        collection_id: collectionId!,
+        raw_text: "e2e smoke test memory",
+      } as never);
     } catch (e) {
       if (e instanceof NebulaServerError) {
         serverErrorObserved = true;
@@ -126,10 +125,8 @@ async function main(): Promise<void> {
   }
 
   // 7. Clean up
-  const deleted = (await client.collections.delete(collectionId!)) as {
-    results?: { success?: boolean };
-  };
-  assert(deleted.results?.success === true, "collections.delete returns results.success: true");
+  const deleted = (await client.collections.delete(collectionId!)) as { success?: boolean };
+  assert(deleted.success === true, "collections.delete returns success: true");
 
   console.log("\nAll SDK e2e smoke checks passed.");
 }

@@ -62,7 +62,7 @@ describe("NebulaClient", () => {
         Authorization: null as unknown as string,
       },
     });
-    await client.memories.search({ body: { query: "hi" } as never });
+    await client.memories.search({ query: "hi" } as never);
     const headers = calls[0].headers;
     expect(headers["x-workspace-id"]).toBe("ws-123");
     expect(headers["authorization"]).toBeUndefined();
@@ -79,9 +79,11 @@ describe("NebulaClient", () => {
       fetchImpl,
     });
     const result = await client.memories.search({
-      body: { query: "hello world" } as never,
-    });
-    expect(result).toEqual({ results: [], total_entries: 0 } as never);
+      query: "hello world",
+    } as never);
+    // Inline-anyOf envelope unwrap: caller sees the inner value (the
+    // empty array here), not the `{results: ...}` wire shape.
+    expect(result).toEqual([] as never);
     expect(calls.length).toBe(1);
     expect(calls[0].method).toBe("POST");
     expect(calls[0].url).toBe("https://api.example.com/v1/memories/search");
@@ -127,7 +129,7 @@ describe("NebulaClient", () => {
     );
     const client = new NebulaClient({ baseUrl: "https://api.example.com", fetchImpl });
     await expect(
-      client.memories.search({ body: {} as never })
+      client.memories.search({} as never)
     ).rejects.toBeInstanceOf(NebulaValidationError);
   });
 
@@ -151,7 +153,7 @@ describe("NebulaClient", () => {
       retry: { maxRetries: 5, baseMs: 1, maxMs: 5 },
     });
     await expect(
-      client.memories.create({ body: { collection_id: "c1" } as never })
+      client.memories.create({ collection_id: "c1" } as never)
     ).rejects.toThrow();
     expect(attempts).toBe(1);
   });
@@ -204,7 +206,7 @@ describe("NebulaClient", () => {
     );
     const client = new NebulaClient({ baseUrl: "https://api.example.com", fetchImpl });
     try {
-      await client.memories.search({ body: {} as never });
+      await client.memories.search({} as never);
       throw new Error("expected throw");
     } catch (e) {
       expect(e).toBeInstanceOf(NebulaValidationError);
@@ -268,7 +270,7 @@ describe("NebulaClient", () => {
     const { fetchImpl } = makeMockFetch(() => jsonResponse(422, envelope));
     const client = new NebulaClient({ baseUrl: "https://api.example.com", fetchImpl });
     try {
-      await client.memories.search({ body: {} as never });
+      await client.memories.search({} as never);
       throw new Error("expected throw");
     } catch (e) {
       expect(e).toBeInstanceOf(NebulaValidationError);
