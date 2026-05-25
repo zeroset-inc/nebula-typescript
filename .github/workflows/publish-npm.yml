@@ -11,6 +11,19 @@
 # do `npm install @nebula-ai/sdk@next`. Caret ranges (`^1.6.0`) never
 # auto-pick pre-releases — semver excludes them unless explicitly named.
 #
+# Two-job structure:
+#   preflight  → no environment, fast version/tag resolution + sentinel
+#                guard. Runs immediately on every dispatch/trigger.
+#   publish    → needs preflight, gated on `environment: release`
+#                (reviewer approval). Only requests approval AFTER the
+#                preflight has confirmed there's something real to publish.
+#
+# Why split: a workflow_dispatch from main (with the in-repo sentinel
+# `0.0.0-from-source` in package.json) would otherwise sit in the
+# approval queue, get approved by a human, then fail fast inside the
+# gated job. The split moves the sentinel check ahead of approval so
+# bad dispatches fail in seconds without burning reviewer attention.
+#
 # Authentication is npm OIDC trusted publishing — no NPM_TOKEN secret.
 # The trusted publisher must be configured on npmjs.com for the
 # `@nebula-ai/sdk` package with:
@@ -39,33 +52,16 @@ on:
     types: [published]
 
 jobs:
-  publish:
-    name: publish
+  preflight:
+    name: preflight
     runs-on: ubuntu-latest
-    environment: release
-    permissions:
-      contents: read
-      id-token: write # OIDC trusted publishing + provenance attestation
+    # Deliberately no `environment:` — we want the sentinel check to
+    # run before any approval is requested.
+    outputs:
+      version: ${{ steps.tag.outputs.version }}
+      tag: ${{ steps.tag.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
-
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: "1.3.11"
-
-      - name: Install
-        run: bun install
-
-      - name: Build dist/
-        run: bun run build
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          registry-url: "https://registry.npmjs.org"
-
-      - name: Install npm@11.6.2 (required for OIDC trusted publishing)
-        run: npm install --prefix ../oidc-npm npm@11.6.2
 
       - name: Resolve dist-tag from version
         id: tag
@@ -92,5 +88,34 @@ jobs:
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
           echo "Publishing $version with --tag $tag"
 
+  publish:
+    name: publish
+    needs: preflight
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: read
+      id-token: write # OIDC trusted publishing + provenance attestation
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.11"
+
+      - name: Install
+        run: bun install
+
+      - name: Build dist/
+        run: bun run build
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install npm@11.6.2 (required for OIDC trusted publishing)
+        run: npm install --prefix ../oidc-npm npm@11.6.2
+
       - name: Publish to npm with provenance via OIDC
-        run: ../oidc-npm/node_modules/.bin/npm publish --provenance --access public --tag ${{ steps.tag.outputs.tag }}
+        run: ../oidc-npm/node_modules/.bin/npm publish --provenance --access public --tag ${{ needs.preflight.outputs.tag }}
