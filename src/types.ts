@@ -531,7 +531,7 @@ export interface components {
              * Activation Score
              * @default 0
              */
-            activation_score: number;
+            activation_score?: number;
             /** Category */
             category?: string | null;
             /**
@@ -556,12 +556,12 @@ export interface components {
              * Activation Score
              * @default 0
              */
-            activation_score: number;
+            activation_score?: number;
             /**
              * Category
              * @default episodic
              */
-            category: string;
+            category?: string;
             /** Description */
             description?: string | null;
             /** Entity Names */
@@ -577,7 +577,7 @@ export interface components {
              * Is Obligation
              * @default false
              */
-            is_obligation: boolean;
+            is_obligation?: boolean;
             /** Member Semantic Ids */
             member_semantic_ids?: string[];
             /** Modality */
@@ -586,7 +586,7 @@ export interface components {
              * N Facts
              * @default 0
              */
-            n_facts: number;
+            n_facts?: number;
             /** Name */
             name: string;
             /** Resolved At */
@@ -610,19 +610,19 @@ export interface components {
              * Activation Score
              * @default 0
              */
-            activation_score: number;
+            activation_score?: number;
             /** Belief Kind */
             belief_kind?: string | null;
             /**
              * Confidence
              * @default 0
              */
-            confidence: number;
+            confidence?: number;
             /**
              * Derivation Type
              * @default trivial
              */
-            derivation_type: string;
+            derivation_type?: string;
             /** Entity Id */
             entity_id?: string | null;
             /** Entity Name */
@@ -636,7 +636,7 @@ export interface components {
              * Is Negated
              * @default false
              */
-            is_negated: boolean;
+            is_negated?: boolean;
             /** Metadata */
             metadata?: {
                 [key: string]: unknown;
@@ -657,19 +657,19 @@ export interface components {
              * Activation Score
              * @default 0
              */
-            activation_score: number;
+            activation_score?: number;
             /** Belief Kind */
             belief_kind?: string | null;
             /**
              * Category
              * @default fact
              */
-            category: string;
+            category?: string;
             /**
              * Corroboration Count
              * @default 1
              */
-            corroboration_count: number;
+            corroboration_count?: number;
             /** Description */
             description?: string | null;
             /** Entity Id */
@@ -684,7 +684,7 @@ export interface components {
              * Extraction Confidence
              * @default 0
              */
-            extraction_confidence: number;
+            extraction_confidence?: number;
             /**
              * Id
              * Format: uuid
@@ -731,12 +731,12 @@ export interface components {
              * Activation Score
              * @default 0
              */
-            activation_score: number;
+            activation_score?: number;
             /**
              * Active Instance Count
              * @default 0
              */
-            active_instance_count: number;
+            active_instance_count?: number;
             /** Backbone Signature Hash */
             backbone_signature_hash?: string | null;
             /** Branches */
@@ -747,7 +747,7 @@ export interface components {
              * Confidence
              * @default 0
              */
-            confidence: number;
+            confidence?: number;
             /** Current Step Index */
             current_step_index?: number | null;
             /** Goal */
@@ -761,7 +761,7 @@ export interface components {
              * Instance Count
              * @default 0
              */
-            instance_count: number;
+            instance_count?: number;
             /** Last Observed At */
             last_observed_at?: string | null;
             /** Metadata */
@@ -777,7 +777,7 @@ export interface components {
              * Taxonomy Version
              * @default 1
              */
-            taxonomy_version: number;
+            taxonomy_version?: number;
             /** Variable Slots */
             variable_slots?: {
                 [key: string]: unknown;
@@ -813,7 +813,7 @@ export interface components {
              * Optional
              * @default false
              */
-            optional: boolean;
+            optional?: boolean;
             /** Typical Entities */
             typical_entities?: string[];
             /** Typical Tools */
@@ -883,7 +883,7 @@ export interface components {
              * @description Ingestion mode for document content.
              * @default custom
              */
-            ingestion_mode: components["schemas"]["IngestionMode"];
+            ingestion_mode?: components["schemas"]["IngestionMode"];
             /**
              * Messages
              * @description Messages to append for conversation memories. Each message has content, role, and optional metadata.
@@ -916,7 +916,7 @@ export interface components {
              * Metadata
              * @default {}
              */
-            metadata: {
+            metadata?: {
                 [key: string]: unknown;
             };
         };
@@ -965,13 +965,13 @@ export interface components {
              * @default bootstrap
              * @constant
              */
-            intent: "bootstrap";
+            intent?: "bootstrap";
             /**
              * Top K
              * @description Maximum number of pattern hits to return.
              * @default 10
              */
-            top_k: number;
+            top_k?: number;
         };
         /**
          * ChunkEnrichmentSettings
@@ -987,19 +987,19 @@ export interface components {
              * @description The prompt to use for chunk enrichment
              * @default chunk_enrichment
              */
-            chunk_enrichment_prompt: string | null;
+            chunk_enrichment_prompt?: string | null;
             /**
              * Enable Chunk Enrichment
              * @description Whether to enable chunk enrichment or not
              * @default false
              */
-            enable_chunk_enrichment: boolean;
+            enable_chunk_enrichment?: boolean;
             /**
              * N Chunks
              * @description The number of preceding and succeeding chunks to include. Defaults to 2.
              * @default 2
              */
-            n_chunks: number;
+            n_chunks?: number;
         };
         /** CollectionResponse */
         CollectionResponse: {
@@ -1007,12 +1007,12 @@ export interface components {
              * Access Tier
              * @default private
              */
-            access_tier: string | null;
+            access_tier?: string | null;
             /**
              * Cache Policy
              * @default lazy
              */
-            cache_policy: string | null;
+            cache_policy?: string | null;
             /** Chain Type */
             chain_type?: string | null;
             /** Contract Address */
@@ -1026,7 +1026,7 @@ export interface components {
              * Creator Royalty Bps
              * @default 250
              */
-            creator_royalty_bps: number | null;
+            creator_royalty_bps?: number | null;
             /** Description */
             description: string | null;
             /** Engram Count */
@@ -1052,7 +1052,7 @@ export interface components {
              * Memory Count
              * @default 0
              */
-            memory_count: number | null;
+            memory_count?: number | null;
             /** Name */
             name: string;
             /** Nft Collection Address */
@@ -1067,7 +1067,7 @@ export interface components {
              * Preview Query Limit
              * @default 0
              */
-            preview_query_limit: number | null;
+            preview_query_limit?: number | null;
             /** Purchase Price Usd */
             purchase_price_usd?: string | null;
             /** Rental Price Monthly Usd */
@@ -1083,7 +1083,7 @@ export interface components {
              * Workflows Enabled
              * @default false
              */
-            workflows_enabled: boolean;
+            workflows_enabled?: boolean;
             /** Workspace Id */
             workspace_id?: string | null;
         };
@@ -1114,7 +1114,7 @@ export interface components {
              * Token Count
              * @default 0
              */
-            token_count: number;
+            token_count?: number;
         };
         /** ConnectRequest */
         ConnectRequest: {
@@ -1278,7 +1278,7 @@ export interface components {
              * Workflows Enabled
              * @default false
              */
-            workflows_enabled: boolean;
+            workflows_enabled?: boolean;
             /** Workspace Id */
             workspace_id?: string | null;
         };
@@ -1324,12 +1324,12 @@ export interface components {
              * @description Ingestion mode for documents
              * @default fast
              */
-            ingestion_mode: components["schemas"]["IngestionMode"] | null;
+            ingestion_mode?: components["schemas"]["IngestionMode"] | null;
             /**
              * @description Engram discriminator: ``document`` or ``conversation``. When omitted, ``conversation`` is inferred if ``messages`` is present; otherwise defaults to ``document``.
              * @default document
              */
-            kind: components["schemas"]["EngramKind"];
+            kind?: components["schemas"]["EngramKind"];
             /**
              * Messages
              * @description Messages for conversation kind
@@ -1385,7 +1385,7 @@ export interface components {
              * @default cursor
              * @constant
              */
-            intent: "cursor";
+            intent?: "cursor";
             /**
              * State Id
              * @description Anchor: the user's current state nodegroup id.
@@ -1396,7 +1396,7 @@ export interface components {
              * @description Maximum number of pattern hits to return.
              * @default 10
              */
-            top_k: number;
+            top_k?: number;
             /**
              * Trace Id
              * @description Anchor: the user's most recent trace id. The handler resolves this trace's state_before automatically.
@@ -1435,23 +1435,23 @@ export interface components {
              * Dim
              * @default 0
              */
-            dim: number;
+            dim?: number;
             /**
              * Encoding
              * @default npy-base64
              * @constant
              */
-            encoding: "npy-base64";
+            encoding?: "npy-base64";
             /**
              * Mask B64
              * @default
              */
-            mask_b64: string;
+            mask_b64?: string;
             /**
              * Values B64
              * @default
              */
-            values_b64: string;
+            values_b64?: string;
         };
         /**
          * Engram
@@ -1498,7 +1498,7 @@ export interface components {
             created_at?: string | null;
             document?: components["schemas"]["DocumentFields"] | null;
             /** @default pending */
-            extraction_status: components["schemas"]["GraphExtractionStatus"];
+            extraction_status?: components["schemas"]["GraphExtractionStatus"];
             /**
              * Id
              * Format: uuid
@@ -1507,7 +1507,7 @@ export interface components {
             /** Ingestion Attempt Number */
             ingestion_attempt_number?: number | null;
             /** @default pending */
-            ingestion_status: components["schemas"]["IngestionStatus"];
+            ingestion_status?: components["schemas"]["IngestionStatus"];
             kind: components["schemas"]["EngramKind"];
             /** Merkle Root */
             merkle_root?: string | null;
@@ -1562,7 +1562,7 @@ export interface components {
              * Collection Id
              * @default
              */
-            collection_id: string;
+            collection_id?: string;
             /**
              * Created At
              * Format: date-time
@@ -1588,7 +1588,7 @@ export interface components {
              * Relationship Count
              * @default 0
              */
-            relationship_count: number;
+            relationship_count?: number;
             /**
              * Updated At
              * Format: date-time
@@ -1627,7 +1627,7 @@ export interface components {
              * @default evidence
              * @constant
              */
-            intent: "evidence";
+            intent?: "evidence";
             /**
              * Pattern Id
              * Format: uuid
@@ -1639,7 +1639,7 @@ export interface components {
              * @description Maximum number of pattern hits to return.
              * @default 10
              */
-            top_k: number;
+            top_k?: number;
         };
         /**
          * EvidenceRef
@@ -1690,7 +1690,7 @@ export interface components {
              * @description MIME type
              * @default application/octet-stream
              */
-            media_type: string;
+            media_type?: string;
             /**
              * @description Content kind: file, image, audio, or document. (enum property replaced by openapi-typescript)
              * @enum {string}
@@ -1746,7 +1746,7 @@ export interface components {
              * Activation Score
              * @default 0
              */
-            activation_score: number;
+            activation_score?: number;
             /** Display Name */
             display_name?: string | null;
             /** Engram Id */
@@ -1800,7 +1800,7 @@ export interface components {
              * Inferred
              * @default false
              */
-            inferred: boolean;
+            inferred?: boolean;
             /** Ledger P Stable */
             ledger_p_stable?: number | null;
             /** Ledger P True */
@@ -1827,12 +1827,12 @@ export interface components {
              * Usable For Rewrite
              * @default false
              */
-            usable_for_rewrite: boolean;
+            usable_for_rewrite?: boolean;
             /**
              * Used For Rewrite
              * @default false
              */
-            used_for_rewrite: boolean;
+            used_for_rewrite?: boolean;
         };
         /**
          * IngestionConfig
@@ -1849,23 +1849,23 @@ export interface components {
              * Automatic Extraction
              * @default false
              */
-            automatic_extraction: boolean;
+            automatic_extraction?: boolean;
             chunk_enrichment_settings?: components["schemas"]["ChunkEnrichmentSettings"];
             /**
              * Chunk Overlap
              * @default 512
              */
-            chunk_overlap: number;
+            chunk_overlap?: number;
             /**
              * Chunk Size
              * @default 1024
              */
-            chunk_size: number;
+            chunk_size?: number;
             /**
              * Chunking Strategy
              * @default recursive
              */
-            chunking_strategy: string;
+            chunking_strategy?: string;
             /** Excluded Parsers */
             excluded_parsers?: string[];
             /** Extra Parsers */
@@ -1876,7 +1876,7 @@ export interface components {
              * Max Concurrent Vlm Tasks
              * @default 5
              */
-            max_concurrent_vlm_tasks: number;
+            max_concurrent_vlm_tasks?: number;
             /** Parser Overrides */
             parser_overrides?: {
                 [key: string]: string;
@@ -1885,24 +1885,24 @@ export interface components {
              * Provider
              * @default nebula
              */
-            provider: string;
+            provider?: string;
             /** Vlm */
             vlm?: string | null;
             /**
              * Vlm Batch Size
              * @default 5
              */
-            vlm_batch_size: number;
+            vlm_batch_size?: number;
             /**
              * Vlm Max Tokens To Sample
              * @default 1024
              */
-            vlm_max_tokens_to_sample: number;
+            vlm_max_tokens_to_sample?: number;
             /**
              * Vlm Ocr One Page Per Chunk
              * @default true
              */
-            vlm_ocr_one_page_per_chunk: boolean;
+            vlm_ocr_one_page_per_chunk?: boolean;
         };
         /**
          * IngestionMode
@@ -1957,7 +1957,7 @@ export interface components {
             created_at?: string | null;
             document?: components["schemas"]["DocumentFields"] | null;
             /** @default pending */
-            extraction_status: components["schemas"]["GraphExtractionStatus"];
+            extraction_status?: components["schemas"]["GraphExtractionStatus"];
             /**
              * Id
              * Format: uuid
@@ -1966,7 +1966,7 @@ export interface components {
             /** Ingestion Attempt Number */
             ingestion_attempt_number?: number | null;
             /** @default pending */
-            ingestion_status: components["schemas"]["IngestionStatus"];
+            ingestion_status?: components["schemas"]["IngestionStatus"];
             kind: components["schemas"]["EngramKind"];
             /** Merkle Root */
             merkle_root?: string | null;
@@ -2008,7 +2008,7 @@ export interface components {
              * @description WAL committed sequence number from this placeholder write, for read-your-writes assertions on the next collection-scoped list call. A non-zero value indicates the request appended a WAL entry; pass it back as `min_applied_wal_seq` on GET /v1/memories to wait for the entry's visibility before serving. Zero on idempotent observe-existing replays and on multi-shard collections (per-shard scalars are not comparable across shards) — clients should treat zero as 'no assertion to make.' Single-shard collections only.
              * @default 0
              */
-            applied_wal_seq: number;
+            applied_wal_seq?: number;
             /** Engram Id */
             engram_id?: string | null;
             /**
@@ -2171,7 +2171,7 @@ export interface components {
              * @description Highest WAL committed sequence number reflected in this response. Non-zero only when the request was served via the WAL-tail fast path. Pair with ``min_applied_wal_seq`` on the request for read-your-writes assertions.
              * @default 0
              */
-            applied_wal_seq: number;
+            applied_wal_seq?: number;
             data: components["schemas"]["ListedEngram"][];
             /** @description Whether another page is available after this one. */
             has_more: boolean;
@@ -2202,7 +2202,7 @@ export interface components {
              * @default predict
              * @constant
              */
-            intent: "predict";
+            intent?: "predict";
             /**
              * State Id
              * @description Anchor: the user's current state nodegroup id.
@@ -2213,7 +2213,7 @@ export interface components {
              * @description Maximum number of pattern hits to return.
              * @default 10
              */
-            top_k: number;
+            top_k?: number;
             /**
              * Trace Id
              * @description Anchor: the user's most recent trace id. The handler resolves this trace's state_before automatically.
@@ -2252,7 +2252,7 @@ export interface components {
              * Collection Id
              * @default
              */
-            collection_id: string;
+            collection_id?: string;
             /**
              * Created At
              * Format: date-time
@@ -2280,7 +2280,7 @@ export interface components {
              * Predicate
              * @default
              */
-            predicate: string;
+            predicate?: string;
             /** Relationship Type */
             relationship_type?: string | null;
             /** Subject */
@@ -2317,7 +2317,7 @@ export interface components {
              * @default resume
              * @constant
              */
-            intent: "resume";
+            intent?: "resume";
             /**
              * State Id
              * @description Anchor: the user's current state nodegroup id.
@@ -2328,7 +2328,7 @@ export interface components {
              * @description Maximum number of pattern hits to return.
              * @default 10
              */
-            top_k: number;
+            top_k?: number;
             /**
              * Trace Id
              * @description Anchor: the user's most recent trace id. The handler resolves this trace's state_before automatically.
@@ -2355,7 +2355,7 @@ export interface components {
              * @description MIME type
              * @default application/octet-stream
              */
-            media_type: string;
+            media_type?: string;
             /**
              * S3 Key
              * @description S3 object key
@@ -2401,13 +2401,13 @@ export interface components {
              * @description Compute effort budget (auto/low/medium/high). Controls traversal compute for memory search, not MemoryRecall size.
              * @default auto
              */
-            effort: components["schemas"]["SearchEffort"];
+            effort?: components["schemas"]["SearchEffort"];
             /**
              * Enable Conceptual Expansion
              * @description Enable conceptual expansion for cross-domain discovery through overlapping concepts
              * @default false
              */
-            enable_conceptual_expansion: boolean;
+            enable_conceptual_expansion?: boolean;
             /**
              * Filters
              * @description Internal: Filters populated by the API router
@@ -2420,7 +2420,7 @@ export interface components {
              * @description Weight for fulltext search in hybrid mode (0-1). Set to 0 for pure semantic search.
              * @default 0.2
              */
-            fulltext_weight: number;
+            fulltext_weight?: number;
             /**
              * Graph Settings
              * @description Internal: Graph traversal settings (bfs_max_depth, semantic_threshold, etc.)
@@ -2433,25 +2433,25 @@ export interface components {
              * @description Internal: Set by select_search_filters when an owner_id $in partition-pruning wrapper has been added around the filter tree. Used by the in-memory graph read engine to strip the Postgres-only wrapper before evaluating delegation.
              * @default false
              */
-            has_pruning_gate: boolean;
+            has_pruning_gate?: boolean;
             /**
              * Include Scores
              * @description Whether to include search score values in the search results
              * @default true
              */
-            include_scores: boolean;
+            include_scores?: boolean;
             /**
              * Semantic Weight
              * @description Weight for semantic search in hybrid mode (0-1). Set to 0 for pure fulltext search.
              * @default 0.8
              */
-            semantic_weight: number;
+            semantic_weight?: number;
             /**
              * Verbose
              * @description Include full internal metadata, UUIDs, and confidence fields in MemoryRecall responses. When False, returns compact LLM-optimized format.
              * @default false
              */
-            verbose: boolean;
+            verbose?: boolean;
         };
         /**
          * SnapshotEnvelope
@@ -2472,12 +2472,12 @@ export interface components {
              * Format Version
              * @default 3
              */
-            format_version: number;
+            format_version?: number;
             /**
              * Generation
              * @default 0
              */
-            generation: number;
+            generation?: number;
             graph?: components["schemas"]["GraphPayload"];
             /** Root Hash */
             root_hash: string;
@@ -2501,12 +2501,12 @@ export interface components {
              * Format Version
              * @default 3
              */
-            format_version: number;
+            format_version?: number;
             /**
              * Generation
              * @default 0
              */
-            generation: number;
+            generation?: number;
             graph?: components["schemas"]["GraphPayload"];
             /** Root Hash */
             root_hash: string;
@@ -2617,7 +2617,7 @@ export interface components {
              * Generate Description
              * @default false
              */
-            generate_description: boolean;
+            generate_description?: boolean;
             /** Name */
             name?: string | null;
             /** Workflows Enabled */
@@ -2635,7 +2635,7 @@ export interface components {
              * @description Merge with existing metadata
              * @default false
              */
-            merge_metadata: boolean;
+            merge_metadata?: boolean;
             /**
              * Metadata
              * @description Metadata to update

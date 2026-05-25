@@ -22,19 +22,19 @@ const client = new Nebula({
   // or: bearerToken: process.env.NEBULA_BEARER_TOKEN,
 });
 
-const id = await client.storeMemory({
+const result = await client.memories.create({
   collection_id: "01234567-...",
   raw_text: "hello, world",
 });
 
-const results = await client.search({ query: "hello" });
+const results = await client.memories.search({ query: "hello" });
 ```
 
-The high-level methods (`storeMemory`, `search`, `deleteMemory`, ...) come
-from the handwritten DX layer at `src/lib/dx.ts`. The low-level resource
-clients (`client.memories.*`, `client.collections.*`, ...) are generated
-directly from the OpenAPI spec and remain available as
-`client.memories.create(...)`, `client.memories.search(...)`, etc.
+Resource methods (`client.memories.*`, `client.collections.*`,
+`client.connectors.*`, `client.snapshots.*`) are generated directly from
+the OpenAPI spec. A small DX layer at `src/lib/dx.ts` adds polymorphic
+helpers like `storeMemory` (dispatches create-vs-append based on whether
+a `memory_id` is present); prefer the resource methods for everything else.
 
 ## Auth
 

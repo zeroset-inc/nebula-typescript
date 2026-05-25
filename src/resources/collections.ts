@@ -25,20 +25,19 @@ export class CollectionsResource {
    * @endpoint POST /v1/collections
    */
   async create(
-    params: {
-  body: components["schemas"]["CreateCollectionRequest"];
-},
+    body: components["schemas"]["CreateCollectionRequest"],
     options?: RequestOptions,
-  ): Promise<components["schemas"]["WrappedCollectionResponse"]> {
-    return this.core.request<components["schemas"]["WrappedCollectionResponse"]>({
+  ): Promise<components["schemas"]["CollectionResponse"]> {
+    const response = (await this.core.request<components["schemas"]["WrappedCollectionResponse"]>({
       method: "POST",
       path: "/v1/collections",
       pathParams: {},
       query: undefined,
-      body: params.body,
+      body: body,
       idempotent: false,
       signal: options?.signal,
-    });
+    })) as { results: components["schemas"]["CollectionResponse"] };
+    return response.results;
   }
 
   /**
@@ -57,15 +56,16 @@ export class CollectionsResource {
   async delete(
     id: string,
     options?: RequestOptions,
-  ): Promise<components["schemas"]["WrappedGenericBooleanResponse"]> {
-    return this.core.request<components["schemas"]["WrappedGenericBooleanResponse"]>({
+  ): Promise<components["schemas"]["GenericBooleanResponse"]> {
+    const response = (await this.core.request<components["schemas"]["WrappedGenericBooleanResponse"]>({
       method: "DELETE",
       path: "/v1/collections/{id}",
       pathParams: { id: id },
       query: undefined,
       idempotent: true,
       signal: options?.signal,
-    });
+    })) as { results: components["schemas"]["GenericBooleanResponse"] };
+    return response.results;
   }
 
   /**
@@ -126,15 +126,16 @@ export class CollectionsResource {
   async retrieve(
     id: string,
     options?: RequestOptions,
-  ): Promise<components["schemas"]["WrappedCollectionResponse"]> {
-    return this.core.request<components["schemas"]["WrappedCollectionResponse"]>({
+  ): Promise<components["schemas"]["CollectionResponse"]> {
+    const response = (await this.core.request<components["schemas"]["WrappedCollectionResponse"]>({
       method: "GET",
       path: "/v1/collections/{id}",
       pathParams: { id: id },
       query: undefined,
       idempotent: true,
       signal: options?.signal,
-    });
+    })) as { results: components["schemas"]["CollectionResponse"] };
+    return response.results;
   }
 
   /**
@@ -156,15 +157,16 @@ export class CollectionsResource {
   ownerId?: string | null;
 },
     options?: RequestOptions,
-  ): Promise<components["schemas"]["WrappedCollectionResponse"]> {
-    return this.core.request<components["schemas"]["WrappedCollectionResponse"]>({
+  ): Promise<components["schemas"]["CollectionResponse"]> {
+    const response = (await this.core.request<components["schemas"]["WrappedCollectionResponse"]>({
       method: "GET",
       path: "/v1/collections/name/{collection_name}",
       pathParams: { collection_name: params.collectionName },
       query: { owner_id: params.ownerId },
       idempotent: true,
       signal: options?.signal,
-    });
+    })) as { results: components["schemas"]["CollectionResponse"] };
+    return response.results;
   }
 
   /**
@@ -186,8 +188,8 @@ export class CollectionsResource {
   body: components["schemas"]["UpdateCollectionRequest"];
 },
     options?: RequestOptions,
-  ): Promise<components["schemas"]["WrappedCollectionResponse"]> {
-    return this.core.request<components["schemas"]["WrappedCollectionResponse"]>({
+  ): Promise<components["schemas"]["CollectionResponse"]> {
+    const response = (await this.core.request<components["schemas"]["WrappedCollectionResponse"]>({
       method: "POST",
       path: "/v1/collections/{id}",
       pathParams: { id: params.id },
@@ -195,7 +197,8 @@ export class CollectionsResource {
       body: params.body,
       idempotent: false,
       signal: options?.signal,
-    });
+    })) as { results: components["schemas"]["CollectionResponse"] };
+    return response.results;
   }
 
 }

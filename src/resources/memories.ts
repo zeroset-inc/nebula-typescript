@@ -34,8 +34,8 @@ export class MemoriesResource {
   body: components["schemas"]["AppendMemoryRequest"];
 },
     options?: RequestOptions,
-  ): Promise<unknown> {
-    return this.core.request<unknown>({
+  ): Promise<components["schemas"]["AppendMemoryResponse"] | components["schemas"]["IngestionResponse"]> {
+    const response = (await this.core.request<unknown>({
       method: "POST",
       path: "/v1/memories/{id}/append",
       pathParams: { id: params.id },
@@ -43,7 +43,8 @@ export class MemoriesResource {
       body: params.body,
       idempotent: false,
       signal: options?.signal,
-    });
+    })) as { results: components["schemas"]["AppendMemoryResponse"] | components["schemas"]["IngestionResponse"] };
+    return response.results;
   }
 
   /**
@@ -63,20 +64,19 @@ export class MemoriesResource {
    * @endpoint POST /v1/memories
    */
   async create(
-    params: {
-  body: components["schemas"]["CreateMemoryRequest"];
-},
+    body: components["schemas"]["CreateMemoryRequest"],
     options?: RequestOptions,
-  ): Promise<components["schemas"]["MemoryCreateResponse"]> {
-    return this.core.request<components["schemas"]["MemoryCreateResponse"]>({
+  ): Promise<components["schemas"]["MemoryCreateAcceptedResponse"] | components["schemas"]["SnapshotMutationResult"]> {
+    const response = (await this.core.request<components["schemas"]["MemoryCreateResponse"]>({
       method: "POST",
       path: "/v1/memories",
       pathParams: {},
       query: undefined,
-      body: params.body,
+      body: body,
       idempotent: false,
       signal: options?.signal,
-    });
+    })) as { results: components["schemas"]["MemoryCreateAcceptedResponse"] | components["schemas"]["SnapshotMutationResult"] };
+    return response.results;
   }
 
   /**
@@ -114,15 +114,16 @@ export class MemoriesResource {
   fileSize: number;
 },
     options?: RequestOptions,
-  ): Promise<components["schemas"]["WrappedPresignedUploadResponse"]> {
-    return this.core.request<components["schemas"]["WrappedPresignedUploadResponse"]>({
+  ): Promise<components["schemas"]["PresignedUploadResponse"]> {
+    const response = (await this.core.request<components["schemas"]["WrappedPresignedUploadResponse"]>({
       method: "POST",
       path: "/v1/memories/upload",
       pathParams: {},
       query: { filename: params.filename, content_type: params.contentType, file_size: params.fileSize },
       idempotent: false,
       signal: options?.signal,
-    });
+    })) as { results: components["schemas"]["PresignedUploadResponse"] };
+    return response.results;
   }
 
   /**
@@ -141,15 +142,16 @@ export class MemoriesResource {
   async delete(
     id: string,
     options?: RequestOptions,
-  ): Promise<components["schemas"]["WrappedGenericBooleanResponse"]> {
-    return this.core.request<components["schemas"]["WrappedGenericBooleanResponse"]>({
+  ): Promise<components["schemas"]["GenericBooleanResponse"]> {
+    const response = (await this.core.request<components["schemas"]["WrappedGenericBooleanResponse"]>({
       method: "DELETE",
       path: "/v1/memories/{id}",
       pathParams: { id: id },
       query: undefined,
       idempotent: false,
       signal: options?.signal,
-    });
+    })) as { results: components["schemas"]["GenericBooleanResponse"] };
+    return response.results;
   }
 
   /**
@@ -171,9 +173,7 @@ export class MemoriesResource {
    * @endpoint POST /v1/memories/delete
    */
   async deleteMany(
-    params: {
-  body: components["schemas"]["DeleteMemoriesRequest"];
-},
+    body: components["schemas"]["DeleteMemoriesRequest"],
     options?: RequestOptions,
   ): Promise<unknown> {
     return this.core.request<unknown>({
@@ -181,7 +181,7 @@ export class MemoriesResource {
       path: "/v1/memories/delete",
       pathParams: {},
       query: undefined,
-      body: params.body,
+      body: body,
       idempotent: false,
       signal: options?.signal,
     });
@@ -202,15 +202,16 @@ export class MemoriesResource {
   s3Key: string;
 },
     options?: RequestOptions,
-  ): Promise<components["schemas"]["WrappedGenericMessageResponse"]> {
-    return this.core.request<components["schemas"]["WrappedGenericMessageResponse"]>({
+  ): Promise<components["schemas"]["GenericMessageResponse"]> {
+    const response = (await this.core.request<components["schemas"]["WrappedGenericMessageResponse"]>({
       method: "DELETE",
       path: "/v1/memories/upload",
       pathParams: {},
       query: { s3_key: params.s3Key },
       idempotent: true,
       signal: options?.signal,
-    });
+    })) as { results: components["schemas"]["GenericMessageResponse"] };
+    return response.results;
   }
 
   /**
@@ -278,20 +279,19 @@ export class MemoriesResource {
    * @endpoint POST /v1/memories/workflow/recall
    */
   async recallWorkflow(
-    params: {
-  body: components["schemas"]["CursorRecallRequest"] | components["schemas"]["PredictRecallRequest"] | components["schemas"]["ResumeRecallRequest"] | components["schemas"]["EvidenceRecallRequest"] | components["schemas"]["BootstrapRecallRequest"];
-},
+    body: components["schemas"]["CursorRecallRequest"] | components["schemas"]["PredictRecallRequest"] | components["schemas"]["ResumeRecallRequest"] | components["schemas"]["EvidenceRecallRequest"] | components["schemas"]["BootstrapRecallRequest"],
     options?: RequestOptions,
-  ): Promise<components["schemas"]["WorkflowRecallResponse"]> {
-    return this.core.request<components["schemas"]["WorkflowRecallResponse"]>({
+  ): Promise<Record<string, unknown>> {
+    const response = (await this.core.request<components["schemas"]["WorkflowRecallResponse"]>({
       method: "POST",
       path: "/v1/memories/workflow/recall",
       pathParams: {},
       query: undefined,
-      body: params.body,
+      body: body,
       idempotent: false,
       signal: options?.signal,
-    });
+    })) as { results: Record<string, unknown> };
+    return response.results;
   }
 
   /**
@@ -312,15 +312,16 @@ export class MemoriesResource {
   async retrieve(
     id: string,
     options?: RequestOptions,
-  ): Promise<components["schemas"]["WrappedEngram"]> {
-    return this.core.request<components["schemas"]["WrappedEngram"]>({
+  ): Promise<components["schemas"]["Engram"]> {
+    const response = (await this.core.request<components["schemas"]["WrappedEngram"]>({
       method: "GET",
       path: "/v1/memories/{id}",
       pathParams: { id: id },
       query: undefined,
       idempotent: true,
       signal: options?.signal,
-    });
+    })) as { results: components["schemas"]["Engram"] };
+    return response.results;
   }
 
   /**
@@ -338,20 +339,19 @@ export class MemoriesResource {
    * @endpoint POST /v1/memories/search
    */
   async search(
-    params: {
-  body: components["schemas"]["MemorySearchRequest"];
-},
+    body: components["schemas"]["MemorySearchRequest"],
     options?: RequestOptions,
-  ): Promise<unknown> {
-    return this.core.request<unknown>({
+  ): Promise<components["schemas"]["CompactMemoryRecallResponse"] | components["schemas"]["MemoryRecall"] | components["schemas"]["SnapshotSearchResult"]> {
+    const response = (await this.core.request<unknown>({
       method: "POST",
       path: "/v1/memories/search",
       pathParams: {},
       query: undefined,
-      body: params.body,
+      body: body,
       idempotent: false,
       signal: options?.signal,
-    });
+    })) as { results: components["schemas"]["CompactMemoryRecallResponse"] | components["schemas"]["MemoryRecall"] | components["schemas"]["SnapshotSearchResult"] };
+    return response.results;
   }
 
   /**
@@ -383,8 +383,8 @@ export class MemoriesResource {
   body: components["schemas"]["UpdateMemoryRequest"];
 },
     options?: RequestOptions,
-  ): Promise<components["schemas"]["WrappedEngram"]> {
-    return this.core.request<components["schemas"]["WrappedEngram"]>({
+  ): Promise<components["schemas"]["Engram"]> {
+    const response = (await this.core.request<components["schemas"]["WrappedEngram"]>({
       method: "PATCH",
       path: "/v1/memories/{id}",
       pathParams: { id: params.id },
@@ -392,7 +392,8 @@ export class MemoriesResource {
       body: params.body,
       idempotent: false,
       signal: options?.signal,
-    });
+    })) as { results: components["schemas"]["Engram"] };
+    return response.results;
   }
 
 }
