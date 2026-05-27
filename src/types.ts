@@ -641,8 +641,14 @@ export interface components {
             metadata?: {
                 [key: string]: unknown;
             } | null;
+            /** Stability Confidence */
+            stability_confidence?: number | null;
             /** Statement */
             statement: string;
+            /** Truth Confidence */
+            truth_confidence?: number | null;
+            /** Use Confidence */
+            use_confidence?: number | null;
         };
         /**
          * ActivatedSemantic
