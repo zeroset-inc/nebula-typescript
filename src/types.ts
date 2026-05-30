@@ -602,8 +602,8 @@ export interface components {
          * ActivatedProcedure
          * @description A procedure-like memory activated during memory traversal.
          *
-         *     This includes preference procedures, atomic traces, and trace-derived
-         *     strategies. Distinct from facts which are descriptive assertions.
+         *     This includes preference procedures and atomic traces. Distinct from facts
+         *     which are descriptive assertions.
          */
         ActivatedProcedure: {
             /**
@@ -641,8 +641,14 @@ export interface components {
             metadata?: {
                 [key: string]: unknown;
             } | null;
+            /** Stability Confidence */
+            stability_confidence?: number | null;
             /** Statement */
             statement: string;
+            /** Truth Confidence */
+            truth_confidence?: number | null;
+            /** Use Confidence */
+            use_confidence?: number | null;
         };
         /**
          * ActivatedSemantic
