@@ -2,22 +2,17 @@
 // Source: nebula-sdks/openapi/openapi.json
 
 import type { components } from "../types.ts";
-import type { NebulaCore } from "../runtime/client.ts";
-
-export interface RequestOptions {
-  signal?: AbortSignal;
-}
+import type { NebulaCore, RequestOptions } from "../runtime/client.ts";
 
 export class CollectionsResource {
   constructor(private readonly core: NebulaCore) {}
 
   /**
-   *
    * Create a new collection
-   * 
+   *
    * Create a new collection and automatically add the creating user
    * to it.
-   * 
+   *
    * This endpoint allows authenticated users to create a new collection
    * with a specified name and optional description. The user creating
    * the collection is automatically added as a member.
@@ -41,11 +36,10 @@ export class CollectionsResource {
   }
 
   /**
-   *
    * Delete collection
-   * 
+   *
    * Delete an existing collection.
-   * 
+   *
    * This endpoint allows deletion of a collection identified by its
    * UUID. The user must have appropriate permissions to delete the
    * collection. Deleting a collection removes all associations but does
@@ -69,16 +63,15 @@ export class CollectionsResource {
   }
 
   /**
-   *
    * List collections
-   * 
+   *
    * Returns a cursor-paginated list of collections the authenticated
    * user has access to.
-   * 
+   *
    * Results can be filtered by providing specific collection IDs.
    * Regular users will only see collections they own or have access to.
    * Superusers can see all collections.
-   * 
+   *
    * The collections are returned in order of last modification, with
    * most recent first.
    * @operationId collections.list
@@ -112,11 +105,10 @@ export class CollectionsResource {
   }
 
   /**
-   *
    * Get collection details
-   * 
+   *
    * Get details of a specific collection.
-   * 
+   *
    * This endpoint retrieves detailed information about a single
    * collection identified by its UUID. The user must have access to the
    * collection to view its details.
@@ -139,11 +131,10 @@ export class CollectionsResource {
   }
 
   /**
-   *
    * Get a collection by name
-   * 
+   *
    * Retrieve a collection by its (owner_id, name) combination.
-   * 
+   *
    * The authenticated user can only fetch collections they own, or, if
    * superuser, from anyone.
    * @operationId collections.retrieveByName
@@ -170,11 +161,10 @@ export class CollectionsResource {
   }
 
   /**
-   *
    * Update collection
-   * 
+   *
    * Update an existing collection's configuration.
-   * 
+   *
    * This endpoint allows updating the name, description, and access settings of an
    * existing collection. The user must have appropriate permissions to
    * modify the collection.
