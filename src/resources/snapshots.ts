@@ -2,19 +2,14 @@
 // Source: nebula-sdks/openapi/openapi.json
 
 import type { components } from "../types.ts";
-import type { NebulaCore } from "../runtime/client.ts";
-
-export interface RequestOptions {
-  signal?: AbortSignal;
-}
+import type { NebulaCore, RequestOptions } from "../runtime/client.ts";
 
 export class SnapshotsResource {
   constructor(private readonly core: NebulaCore) {}
 
   /**
-   *
    * Export a collection snapshot
-   * 
+   *
    * Export a collection's full graph state as a
    * portable SnapshotEnvelope.
    * @operationId snapshots.export
@@ -23,8 +18,8 @@ export class SnapshotsResource {
   async export(
     body: components["schemas"]["SnapshotExportRequest"],
     options?: RequestOptions,
-  ): Promise<components["schemas"]["SnapshotEnvelope-Output"]> {
-    const response = (await this.core.request<components["schemas"]["WrappedSnapshotEnvelope"]>({
+  ): Promise<components["schemas"]["SnapshotEnvelope-Output"] | components["schemas"]["SnapshotObjectReference"]> {
+    const response = (await this.core.request<components["schemas"]["WrappedSnapshotEnvelopeOrSnapshotObjectReference"]>({
       method: "POST",
       path: "/v1/device-memory/snapshot/export",
       pathParams: {},
@@ -32,14 +27,13 @@ export class SnapshotsResource {
       body: body,
       idempotent: true,
       signal: options?.signal,
-    })) as { results: components["schemas"]["SnapshotEnvelope-Output"] };
+    })) as { results: components["schemas"]["SnapshotEnvelope-Output"] | components["schemas"]["SnapshotObjectReference"] };
     return response.results;
   }
 
   /**
-   *
    * Import a snapshot into an ephemeral collection
-   * 
+   *
    * Import a SnapshotEnvelope into an ephemeral
    * collection. Returns the ephemeral collection UUID.
    * @operationId snapshots.import

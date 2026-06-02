@@ -7,6 +7,7 @@ import { CollectionsResource } from "./resources/collections.ts";
 import { ConnectorsResource } from "./resources/connectors.ts";
 import { MemoriesResource } from "./resources/memories.ts";
 import { SnapshotsResource } from "./resources/snapshots.ts";
+import { WorkspacesResource } from "./resources/workspaces.ts";
 
 export class NebulaClient {
   protected readonly core: NebulaCore;
@@ -15,6 +16,7 @@ export class NebulaClient {
   readonly connectors: ConnectorsResource;
   readonly memories: MemoriesResource;
   readonly snapshots: SnapshotsResource;
+  readonly workspaces: WorkspacesResource;
 
   constructor(options: ClientOptions = {}) {
     this.core = new NebulaCore(options);
@@ -23,5 +25,6 @@ export class NebulaClient {
     this.connectors = new ConnectorsResource(this.core);
     this.memories = new MemoriesResource(this.core);
     this.snapshots = new SnapshotsResource(this.core);
+    this.workspaces = new WorkspacesResource(this.core);
   }
 }

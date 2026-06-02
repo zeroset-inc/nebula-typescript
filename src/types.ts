@@ -515,6 +515,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/workspaces/{workspace_id}/storage-targets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List workspace storage targets
+         * @description List customer-owned object storage targets for a workspace.
+         */
+        get: operations["workspaces.listStorageTargets"];
+        put?: never;
+        /**
+         * Create workspace storage target
+         * @description Register a customer S3 bucket for hosted BYOC storage.
+         */
+        post: operations["workspaces.createStorageTarget"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/workspaces/{workspace_id}/storage-targets/{target_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Disable workspace storage target
+         * @description Disable a customer storage target for future collection binds.
+         */
+        delete: operations["workspaces.disableStorageTarget"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/workspaces/{workspace_id}/storage-targets/{target_id}/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Validate workspace storage target
+         * @description Probe a customer storage target and mark it active on success.
+         */
+        post: operations["workspaces.validateStorageTarget"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -602,8 +666,8 @@ export interface components {
          * ActivatedProcedure
          * @description A procedure-like memory activated during memory traversal.
          *
-         *     This includes preference procedures, atomic traces, and trace-derived
-         *     strategies. Distinct from facts which are descriptive assertions.
+         *     This includes preference procedures and atomic traces. Distinct from facts
+         *     which are descriptive assertions.
          */
         ActivatedProcedure: {
             /**
@@ -641,8 +705,14 @@ export interface components {
             metadata?: {
                 [key: string]: unknown;
             } | null;
+            /** Stability Confidence */
+            stability_confidence?: number | null;
             /** Statement */
             statement: string;
+            /** Truth Confidence */
+            truth_confidence?: number | null;
+            /** Use Confidence */
+            use_confidence?: number | null;
         };
         /**
          * ActivatedSemantic
@@ -1072,6 +1142,8 @@ export interface components {
             purchase_price_usd?: string | null;
             /** Rental Price Monthly Usd */
             rental_price_monthly_usd?: string | null;
+            /** Storage Target Id */
+            storage_target_id?: string | null;
             /**
              * Updated At
              * Format: date-time
@@ -1275,11 +1347,19 @@ export interface components {
             /** Name */
             name: string;
             /**
+             * Storage Target Id
+             * @description BYOC storage target to host this collection's graph data. Requires a team workspace and an active target provisioned through the dashboard or workspace storage-target APIs.
+             */
+            storage_target_id?: string | null;
+            /**
              * Workflows Enabled
              * @default false
              */
             workflows_enabled?: boolean;
-            /** Workspace Id */
+            /**
+             * Workspace Id
+             * @description Workspace this collection belongs to. Provisioned via the dashboard / management API, not minted through the public SDK.
+             */
             workspace_id?: string | null;
         };
         /**
@@ -1354,6 +1434,8 @@ export interface components {
             raw_text?: string | null;
             /** @description Device-memory snapshot (mutually exclusive with collection_id). */
             snapshot?: components["schemas"]["SnapshotEnvelope-Input"] | null;
+            /** @description Device-memory snapshot reference for customer-owned object storage. Mutually exclusive with collection_id and snapshot. */
+            snapshot_ref?: components["schemas"]["SnapshotObjectReference"] | null;
             /**
              * Speaker Id
              * @description UUID of the SourceRole entity creating this memory
@@ -2106,6 +2188,8 @@ export interface components {
             search_settings?: components["schemas"]["SearchSettings"] | null;
             /** @description Device-memory snapshot for stateless search. */
             snapshot?: components["schemas"]["SnapshotEnvelope-Input"] | null;
+            /** @description Device-memory snapshot reference for stateless search. */
+            snapshot_ref?: components["schemas"]["SnapshotObjectReference"] | null;
         };
         /**
          * Message
@@ -2518,10 +2602,12 @@ export interface components {
              * Format: uuid
              */
             collection_id: string;
+            destination?: components["schemas"]["SnapshotObjectReference"] | null;
         };
         /** SnapshotImportRequest */
         SnapshotImportRequest: {
-            snapshot: components["schemas"]["SnapshotEnvelope-Input"];
+            snapshot?: components["schemas"]["SnapshotEnvelope-Input"] | null;
+            snapshot_ref?: components["schemas"]["SnapshotObjectReference"] | null;
         };
         /**
          * SnapshotImportResult
@@ -2539,7 +2625,44 @@ export interface components {
          * @description Updated snapshot returned by snapshot-mode memory writes.
          */
         SnapshotMutationResult: {
-            snapshot: components["schemas"]["SnapshotEnvelope-Output"];
+            snapshot?: components["schemas"]["SnapshotEnvelope-Output"] | null;
+            snapshot_ref?: components["schemas"]["SnapshotObjectReference"] | null;
+        };
+        /**
+         * SnapshotObjectReference
+         * @description Customer-owned snapshot object transport for device memory.
+         */
+        SnapshotObjectReference: {
+            /**
+             * Collection Id
+             * Format: uuid
+             * @description Collection UUID the referenced snapshot belongs to. Nebula authorizes this collection before fetching customer-owned URLs.
+             */
+            collection_id: string;
+            /** Get Headers */
+            get_headers?: {
+                [key: string]: string;
+            };
+            /**
+             * Get Url
+             * @description Short-lived signed URL Nebula can GET to load the snapshot.
+             */
+            get_url?: string | null;
+            /** Put Headers */
+            put_headers?: {
+                [key: string]: string;
+            };
+            /**
+             * Put Url
+             * @description Short-lived signed URL Nebula can PUT to store an updated snapshot.
+             */
+            put_url?: string | null;
+            /**
+             * Type
+             * @default signed_url
+             * @constant
+             */
+            type?: "signed_url";
         };
         /** SnapshotSearchEntityResponse */
         SnapshotSearchEntityResponse: {
@@ -2590,6 +2713,81 @@ export interface components {
             entities?: components["schemas"]["SnapshotSearchEntityResponse"][];
             /** Relationships */
             relationships?: components["schemas"]["SnapshotSearchRelationshipResponse"][];
+        };
+        /**
+         * StorageTargetCreateRequest
+         * @description Hosted SaaS storage target registration. Use AWS S3 and omit custom endpoint configuration.
+         */
+        StorageTargetCreateRequest: {
+            /** Bucket */
+            bucket: string;
+            /** Kms Key Id */
+            kms_key_id?: string;
+            /** Name */
+            name: string;
+            /**
+             * Prefix
+             * @default
+             */
+            prefix?: string;
+            /** Region */
+            region: string;
+            /**
+             * Role Arn
+             * @description AWS IAM role ARN Nebula assumes to access the bucket.
+             */
+            role_arn: string;
+        };
+        /** StorageTargetResponse */
+        StorageTargetResponse: {
+            /** Bucket */
+            bucket: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** External Id */
+            external_id: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Kind
+             * @constant
+             */
+            kind: "customer_s3";
+            /** Kms Key Id */
+            kms_key_id?: string | null;
+            /** Last Validated At */
+            last_validated_at?: string | null;
+            /** Name */
+            name: string;
+            /** Prefix */
+            prefix: string;
+            /** Region */
+            region?: string | null;
+            /** Role Arn */
+            role_arn?: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "active" | "validation_failed" | "disabled";
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Validation Error */
+            validation_error?: string | null;
+            /**
+             * Workspace Id
+             * Format: uuid
+             */
+            workspace_id: string;
         };
         /**
          * TextContentRequest
@@ -2725,6 +2923,11 @@ export interface components {
             /** Results */
             results: components["schemas"]["ConnectorConnectionResponse"][];
         };
+        /** NebulaResults[list[StorageTargetResponse]] */
+        WrappedListOfStorageTargetResponse: {
+            /** Results */
+            results: components["schemas"]["StorageTargetResponse"][];
+        };
         /** NebulaResults[list[str]] */
         WrappedListOfStr: {
             /** Results */
@@ -2742,9 +2945,10 @@ export interface components {
         WrappedPresignedUploadResponse: {
             results: components["schemas"]["PresignedUploadResponse"];
         };
-        /** NebulaResults[SnapshotEnvelope] */
-        WrappedSnapshotEnvelope: {
-            results: components["schemas"]["SnapshotEnvelope-Output"];
+        /** NebulaResults[Union[SnapshotEnvelope, SnapshotObjectReference]] */
+        WrappedSnapshotEnvelopeOrSnapshotObjectReference: {
+            /** Results */
+            results: components["schemas"]["SnapshotEnvelope-Output"] | components["schemas"]["SnapshotObjectReference"];
         };
         /** NebulaResults[SnapshotImportResult] */
         WrappedSnapshotImportResult: {
@@ -2757,6 +2961,10 @@ export interface components {
         /** NebulaResults[SnapshotSearchResult] */
         WrappedSnapshotSearchResult: {
             results: components["schemas"]["SnapshotSearchResult"];
+        };
+        /** NebulaResults[StorageTargetResponse] */
+        WrappedStorageTargetResponse: {
+            results: components["schemas"]["StorageTargetResponse"];
         };
     };
     responses: never;
@@ -3710,7 +3918,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["WrappedSnapshotEnvelope"];
+                    "application/json": components["schemas"]["WrappedSnapshotEnvelopeOrSnapshotObjectReference"];
                 };
             };
             /** @description Bad Request */
@@ -4747,6 +4955,337 @@ export interface operations {
                      *     }
                      */
                     "application/json": components["schemas"]["WrappedAppendMemoryResponse"] | components["schemas"]["WrappedIngestionResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "workspaces.listStorageTargets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "results": [
+                     *         {
+                     *           "bucket": "string",
+                     *           "created_at": "1970-01-01T00:00:00Z",
+                     *           "external_id": "string",
+                     *           "id": "00000000-0000-0000-0000-000000000000",
+                     *           "kind": "customer_s3",
+                     *           "name": "string",
+                     *           "prefix": "string",
+                     *           "status": "pending",
+                     *           "updated_at": "1970-01-01T00:00:00Z",
+                     *           "workspace_id": "00000000-0000-0000-0000-000000000000"
+                     *         }
+                     *       ]
+                     *     }
+                     */
+                    "application/json": components["schemas"]["WrappedListOfStorageTargetResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "workspaces.createStorageTarget": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StorageTargetCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "results": {
+                     *         "bucket": "string",
+                     *         "created_at": "1970-01-01T00:00:00Z",
+                     *         "external_id": "string",
+                     *         "id": "00000000-0000-0000-0000-000000000000",
+                     *         "kind": "customer_s3",
+                     *         "name": "string",
+                     *         "prefix": "string",
+                     *         "status": "pending",
+                     *         "updated_at": "1970-01-01T00:00:00Z",
+                     *         "workspace_id": "00000000-0000-0000-0000-000000000000"
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["WrappedStorageTargetResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "workspaces.disableStorageTarget": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                target_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "results": {
+                     *         "bucket": "string",
+                     *         "created_at": "1970-01-01T00:00:00Z",
+                     *         "external_id": "string",
+                     *         "id": "00000000-0000-0000-0000-000000000000",
+                     *         "kind": "customer_s3",
+                     *         "name": "string",
+                     *         "prefix": "string",
+                     *         "status": "pending",
+                     *         "updated_at": "1970-01-01T00:00:00Z",
+                     *         "workspace_id": "00000000-0000-0000-0000-000000000000"
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["WrappedStorageTargetResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "workspaces.validateStorageTarget": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                target_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "results": {
+                     *         "bucket": "string",
+                     *         "created_at": "1970-01-01T00:00:00Z",
+                     *         "external_id": "string",
+                     *         "id": "00000000-0000-0000-0000-000000000000",
+                     *         "kind": "customer_s3",
+                     *         "name": "string",
+                     *         "prefix": "string",
+                     *         "status": "pending",
+                     *         "updated_at": "1970-01-01T00:00:00Z",
+                     *         "workspace_id": "00000000-0000-0000-0000-000000000000"
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["WrappedStorageTargetResponse"];
                 };
             };
             /** @description Bad Request */

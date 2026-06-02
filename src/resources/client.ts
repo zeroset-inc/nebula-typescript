@@ -2,19 +2,14 @@
 // Source: nebula-sdks/openapi/openapi.json
 
 import type { components } from "../types.ts";
-import type { NebulaCore } from "../runtime/client.ts";
-
-export interface RequestOptions {
-  signal?: AbortSignal;
-}
+import type { NebulaCore, RequestOptions } from "../runtime/client.ts";
 
 export class ClientResource {
   constructor(private readonly core: NebulaCore) {}
 
   /**
-   *
    * Health probe
-   * 
+   *
    * Lightweight liveness probe. Returns a 200 with a fixed message when the API process is up. Does not verify downstream dependencies (database, storage, workers) — use the internal status endpoints for those.
    * @operationId client.health
    * @endpoint GET /v1/health

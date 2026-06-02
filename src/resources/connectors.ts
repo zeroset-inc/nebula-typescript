@@ -2,19 +2,14 @@
 // Source: nebula-sdks/openapi/openapi.json
 
 import type { components } from "../types.ts";
-import type { NebulaCore } from "../runtime/client.ts";
-
-export interface RequestOptions {
-  signal?: AbortSignal;
-}
+import type { NebulaCore, RequestOptions } from "../runtime/client.ts";
 
 export class ConnectorsResource {
   constructor(private readonly core: NebulaCore) {}
 
   /**
-   *
    * Start OAuth connection flow
-   * 
+   *
    * Start the OAuth connection flow for the given external provider. Returns the authorization URL the user should visit to grant Nebula access. After consent the provider redirects back to Nebula and the connection becomes active.
    * @operationId connectors.connect
    * @endpoint POST /v1/connectors/{provider}/connect
@@ -39,9 +34,8 @@ export class ConnectorsResource {
   }
 
   /**
-   *
    * Disconnect an external data source
-   * 
+   *
    * Disconnect the named connection, revoking the stored OAuth credentials and stopping future syncs. Optionally pass `delete_memories=true` to also remove every memory this connection had ingested.
    * @operationId connectors.disconnect
    * @endpoint DELETE /v1/connectors/{connection_id}
@@ -65,9 +59,8 @@ export class ConnectorsResource {
   }
 
   /**
-   *
    * List active connections for a collection
-   * 
+   *
    * Return every connector connection associated with the given collection, with encrypted credentials redacted. Useful for showing the user which third-party data sources are wired up to a collection.
    * @operationId connectors.list
    * @endpoint GET /v1/connectors
@@ -90,9 +83,8 @@ export class ConnectorsResource {
   }
 
   /**
-   *
    * List available connector providers
-   * 
+   *
    * Return the set of connector provider identifiers (e.g. `google_drive`, `slack`) that this Nebula instance is configured to expose. Pass one of these to `POST /connectors/{provider}/connect` to start an OAuth flow.
    * @operationId connectors.listProviders
    * @endpoint GET /v1/connectors/providers
@@ -110,9 +102,8 @@ export class ConnectorsResource {
   }
 
   /**
-   *
    * Get a single connection by ID
-   * 
+   *
    * Fetch a single connector connection by its UUID. Returns the connection metadata plus whether the underlying subscription is active. Encrypted credentials are never returned to clients.
    * @operationId connectors.retrieve
    * @endpoint GET /v1/connectors/{connection_id}
@@ -133,9 +124,8 @@ export class ConnectorsResource {
   }
 
   /**
-   *
    * Manually trigger a sync
-   * 
+   *
    * Schedule an immediate sync for an active connection, bypassing the normal cadence. Returns 409 if a sync is already in progress and 400 if the connection isn't in the `active` state.
    * @operationId connectors.sync
    * @endpoint POST /v1/connectors/{connection_id}/sync
