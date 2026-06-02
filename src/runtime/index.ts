@@ -1,5 +1,5 @@
 export { NebulaCore } from "./client.ts";
-export type { ClientOptions, RequestArgs } from "./client.ts";
+export type { ClientOptions, RequestArgs, RequestOptions } from "./client.ts";
 export {
   NebulaError,
   NebulaAPIError,

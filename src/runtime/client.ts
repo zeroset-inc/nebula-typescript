@@ -34,6 +34,11 @@ export interface RequestArgs {
   signal?: AbortSignal;
 }
 
+/** Per-call options every generated resource method accepts. */
+export interface RequestOptions {
+  signal?: AbortSignal;
+}
+
 const DEFAULT_BASE_URL = "https://api.zeroset.com";
 const DEFAULT_TIMEOUT_MS = 60_000;
 
