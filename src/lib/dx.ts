@@ -27,10 +27,10 @@ type SnapshotEnvelopeOutput = Schemas["SnapshotEnvelope-Output"];
 export type CompatClientOptions = ClientOptions & {
   apiKey?: string | null;
   baseUrl?: string | null;
-  // Stainless-shape capital-U alias. Some internal callers
-  // (backend/local-websocket-server, backend/lambda/websocket-llm) still
-  // pass `baseURL`; without this alias the value falls through unused
-  // and the runtime defaults to api.zeroset.com.
+  // Stainless-shape capital-U alias. Some internal callers, including the
+  // local playground WebSocket server, still pass `baseURL`; without this
+  // alias the value falls through unused and the runtime defaults to
+  // api.zeroset.com.
   baseURL?: string | null;
   // Stainless-shape alias for `timeoutMs`. Same compat reason.
   timeout?: number | null;
