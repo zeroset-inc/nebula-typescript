@@ -1,6 +1,5 @@
 import { describe, test, expect } from "bun:test";
 import { Nebula, NebulaClient } from "../src/index.ts";
-import { looksLikeNebulaAPIKey } from "../src/lib/dx.ts";
 
 interface CapturedRequest {
   url: string;
@@ -131,23 +130,15 @@ describe("DX layer", () => {
     expect(calls[0].body).toEqual(["m1", "m2"]);
   });
 
-  test("looksLikeNebulaAPIKey detects key_ / neb_ prefixes", () => {
-    expect(looksLikeNebulaAPIKey("key_abc.def")).toBe(true);
-    expect(looksLikeNebulaAPIKey("neb_xyz.123")).toBe(true);
-    expect(looksLikeNebulaAPIKey("eyJhbGciOiJIUzI1NiJ9")).toBe(false);
-    expect(looksLikeNebulaAPIKey("key_abc")).toBe(false);
-  });
-
-  test("auth normalization: non-key-shaped token routes to bearer", async () => {
+  test("apiKey authenticates via Authorization: Bearer", async () => {
     const { fetchImpl, calls } = makeMockFetch(() => jsonResponse(200, { results: {} }));
     const client = new Nebula({
       baseUrl: "https://api.example.com",
-      apiKey: "eyJhbGciOiJIUzI1NiJ9.opaquebearer",
+      apiKey: "key_abc.secret",
       fetchImpl,
     });
     await client.memories.retrieve("m1");
-    expect(calls[0].headers.authorization).toBe("Bearer eyJhbGciOiJIUzI1NiJ9.opaquebearer");
-    expect(calls[0].headers["x-api-key"]).toBeUndefined();
+    expect(calls[0].headers.authorization).toBe("Bearer key_abc.secret");
   });
 
   test("collections.delete returns the unwrapped {success: bool} body", async () => {
