@@ -9,7 +9,6 @@ import { backoffMs, DEFAULT_RETRY, isRetryableStatus, sleep, type RetryPolicy } 
 export interface ClientOptions {
   baseUrl?: string;
   apiKey?: string;
-  bearerToken?: string;
   defaultHeaders?: Record<string, string>;
   fetchImpl?: typeof fetch;
   // Caller-supplied RequestInit fields applied to every outbound fetch.
@@ -45,7 +44,6 @@ const DEFAULT_TIMEOUT_MS = 60_000;
 export class NebulaCore {
   readonly baseUrl: string;
   readonly apiKey?: string;
-  readonly bearerToken?: string;
   readonly defaultHeaders: Record<string, string>;
   readonly fetchImpl: typeof fetch;
   readonly fetchOptions: Omit<RequestInit, "method" | "headers" | "body" | "signal">;
@@ -56,7 +54,6 @@ export class NebulaCore {
   constructor(options: ClientOptions = {}) {
     this.baseUrl = (options.baseUrl ?? DEFAULT_BASE_URL).replace(/\/$/, "");
     this.apiKey = options.apiKey;
-    this.bearerToken = options.bearerToken;
     // Filter null/undefined values. Callers (often using `as any` to
     // bypass the `Record<string, string>` type) pass nulls to suppress
     // a header — but `new Headers({k: null})` coerces null to the
@@ -94,8 +91,10 @@ export class NebulaCore {
     headers.set("User-Agent", this.userAgent);
     headers.set("Accept", "application/json");
     if (hasBody) headers.set("Content-Type", "application/json");
-    if (this.apiKey) headers.set("X-API-Key", this.apiKey);
-    if (this.bearerToken) headers.set("Authorization", `Bearer ${this.bearerToken}`);
+    // The API key authenticates via the Authorization header — the backend
+    // resolves a Nebula API key (or, for internal callers, a JWT) from the
+    // same bearer credential.
+    if (this.apiKey) headers.set("Authorization", `Bearer ${this.apiKey}`);
     if (perRequest) {
       for (const [k, v] of Object.entries(perRequest)) headers.set(k, v);
     }
