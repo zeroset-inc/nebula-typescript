@@ -2142,6 +2142,10 @@ export interface components {
             procedural?: components["schemas"]["ActivatedProcedure"][];
             /** Query */
             query: string;
+            /** Search Timing Ms */
+            search_timing_ms?: {
+                [key: string]: number;
+            } | null;
             /** Semantic */
             semantic?: components["schemas"]["ActivatedSemantic"][];
             /** Sources */
