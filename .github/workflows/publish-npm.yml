@@ -3,42 +3,23 @@
 # workflow_dispatch for re-publish recovery.
 #
 # Channel routing:
-#   - Plain semver (1.6.0)                  → `--tag latest` (stable)
-#   - Pre-release semver (1.6.0-rc.1, etc.) → `--tag next`  (iteration)
+#   - Plain semver (1.6.0)                  -> `--tag latest` (stable)
+#   - Pre-release semver (1.6.0-rc.1, etc.) -> `--tag next`  (iteration)
 #
 # Consumers running `npm install @nebula-ai/sdk` get whatever `latest`
-# points to (stable only). Consumers opting in to the iteration channel
-# do `npm install @nebula-ai/sdk@next`. Caret ranges (`^1.6.0`) never
-# auto-pick pre-releases — semver excludes them unless explicitly named.
+# points to. Consumers opting in to the iteration channel install
+# `@nebula-ai/sdk@next`. Caret ranges never auto-pick pre-releases unless
+# explicitly named.
 #
 # Two-job structure:
-#   preflight  → no environment, fast version/tag resolution + sentinel
+#   preflight  -> no environment, fast version/tag resolution + sentinel
 #                guard. Runs immediately on every dispatch/trigger.
-#   publish    → needs preflight, gated on `environment: release`
+#   publish    -> needs preflight, gated on `environment: release`
 #                (reviewer approval). Only requests approval AFTER the
-#                preflight has confirmed there's something real to publish.
+#                preflight has confirmed there is something real to publish.
 #
-# Why split: a workflow_dispatch from main (with the in-repo sentinel
-# `0.0.0-from-source` in package.json) would otherwise sit in the
-# approval queue, get approved by a human, then fail fast inside the
-# gated job. The split moves the sentinel check ahead of approval so
-# bad dispatches fail in seconds without burning reviewer attention.
-#
-# Authentication is npm OIDC trusted publishing — no NPM_TOKEN secret.
-# The trusted publisher must be configured on npmjs.com for the
-# `@nebula-ai/sdk` package with:
-#   - Org: zeroset-inc
-#   - Repo: nebula-typescript
-#   - Workflow filename: publish-npm.yml
-#   - Environment: release
-#
-# OIDC publishing requires npm 11.5+; setup-node ships an older npm, so
-# we install npm@11.6.2 explicitly into a side directory and point
-# `npm publish` at that binary.
-#
-# Provenance attestations: `--provenance` makes npm sign the package with
-# a GitHub Actions OIDC token, producing an attestation that npm displays
-# as "Built and signed on GitHub Actions" on the package page.
+# Authentication is npm OIDC trusted publishing -- no NPM_TOKEN secret.
+# The trusted publisher must be configured on npmjs.com for @nebula-ai/sdk.
 #
 # Synced from nebula-sdks/custom/downstream-ts/.github/workflows/publish-npm.yml
 # by the upstream nebula-sdk-sync.yml workflow. Edit the template, not the
@@ -55,8 +36,6 @@ jobs:
   preflight:
     name: preflight
     runs-on: ubuntu-latest
-    # Deliberately no `environment:` — we want the sentinel check to
-    # run before any approval is requested.
     outputs:
       version: ${{ steps.tag.outputs.version }}
       tag: ${{ steps.tag.outputs.tag }}
@@ -67,18 +46,10 @@ jobs:
         id: tag
         run: |
           version=$(node -p "require('./package.json').version")
-          # Sentinel guard: in-repo main carries `0.0.0-from-source` until
-          # release-please bumps it. The `release:published` trigger checks
-          # out the tag (real version, safe); `workflow_dispatch` defaults
-          # to the dispatched ref — if someone dispatches from main without
-          # picking a tag, we'd otherwise OIDC-publish the sentinel. Bail.
           if [[ "$version" == *from-source* ]]; then
-            echo "::error::Refusing to publish sentinel version '$version'. Dispatch this workflow against a release tag (e.g. v1.6.0-rc.0), not main."
+            echo "::error::Refusing to publish sentinel version '$version'. Dispatch this workflow against a release tag, not main."
             exit 1
           fi
-          # Semver pre-release versions contain a `-` (e.g. 1.6.0-rc.1).
-          # Plain semver releases (1.6.0) go to `latest`; everything else
-          # goes to `next` so `npm install <pkg>` doesn't auto-pick them.
           if [[ "$version" == *-* ]]; then
             tag=next
           else
@@ -95,7 +66,7 @@ jobs:
     environment: release
     permissions:
       contents: read
-      id-token: write # OIDC trusted publishing + provenance attestation
+      id-token: write
     steps:
       - uses: actions/checkout@v4
 
@@ -118,4 +89,4 @@ jobs:
         run: npm install --prefix ../oidc-npm npm@11.6.2
 
       - name: Publish to npm with provenance via OIDC
-        run: ../oidc-npm/node_modules/.bin/npm publish --provenance --access public --tag ${{ needs.preflight.outputs.tag }}
+        run: ../oidc-npm/node_modules/.bin/npm publish --ignore-scripts --provenance --access public --tag ${{ needs.preflight.outputs.tag }}
