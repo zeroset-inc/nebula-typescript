@@ -1,4 +1,4 @@
-# Replaces the Stainless-generated pnpm-based CI for the downstream
+# Replaces the legacy pnpm-based CI for the downstream
 # zeroset-inc/nebula-typescript repo. Synced into place by the upstream
 # nebula-sdk-sync.yml workflow. Edit the template at
 # nebula-sdks/custom/downstream-ts/.github/workflows/ci.yml — direct edits

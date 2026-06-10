@@ -44,12 +44,11 @@ function jsonResponse(status: number, body: unknown, headers: Record<string, str
 
 describe("NebulaClient", () => {
   test("nullish defaultHeaders are stripped before reaching fetch", async () => {
-    // Existing frontend callers pass `defaultHeaders: { 'X-API-Key': null,
-    // 'Authorization': null }` (cast `as any`) to suppress those headers
-    // for cookie-auth requests. The runtime must drop the nulls — otherwise
-    // `new Headers({ k: null })` coerces to the literal string "null", and
-    // the backend treats an "Authorization: null" header as an explicit
-    // credential, never falling back to the session cookie.
+    // Callers pass `defaultHeaders: { 'Authorization': null }` (cast `as any`)
+    // to suppress that header for cookie-auth requests. The runtime must drop
+    // the nulls — otherwise `new Headers({ k: null })` coerces to the literal
+    // string "null", and the backend treats an "Authorization: null" header as
+    // an explicit credential, never falling back to the session cookie.
     const { fetchImpl, calls } = makeMockFetch(() =>
       jsonResponse(200, { results: [], total_entries: 0 })
     );
@@ -58,7 +57,6 @@ describe("NebulaClient", () => {
       fetchImpl,
       defaultHeaders: {
         "X-Workspace-Id": "ws-123",
-        "X-API-Key": null as unknown as string,
         Authorization: null as unknown as string,
       },
     });
@@ -66,7 +64,6 @@ describe("NebulaClient", () => {
     const headers = calls[0].headers;
     expect(headers["x-workspace-id"]).toBe("ws-123");
     expect(headers["authorization"]).toBeUndefined();
-    expect(headers["x-api-key"]).toBeUndefined();
   });
 
   test("memories.search sends POST with body and bearer auth", async () => {
@@ -75,7 +72,7 @@ describe("NebulaClient", () => {
     );
     const client = new NebulaClient({
       baseUrl: "https://api.example.com",
-      bearerToken: "secret",
+      apiKey: "secret",
       fetchImpl,
     });
     const result = await client.memories.search({
@@ -102,7 +99,7 @@ describe("NebulaClient", () => {
       fetchImpl,
     });
     await client.collections.list({ cursor: "MTA=", limit: 5, ownerOnly: true });
-    expect(calls[0].headers["x-api-key"]).toBe("k1");
+    expect(calls[0].headers.authorization).toBe("Bearer k1");
     expect(calls[0].url).toContain("cursor=MTA%3D");
     expect(calls[0].url).toContain("limit=5");
     expect(calls[0].url).toContain("owner_only=true");
