@@ -12,7 +12,7 @@
 //
 // Source of truth: nebula-sdks/custom/typescript/dx.ts
 // The generator copies this file into sdks/typescript/src/lib/dx.ts on every
-// `bun run generate`. Edit the source, not the copy.
+// `pnpm --dir nebula-sdks/generator run generate`. Edit the source, not the copy.
 
 import { NebulaClient } from "../client.ts";
 import {
@@ -27,14 +27,13 @@ type SnapshotEnvelopeOutput = Schemas["SnapshotEnvelope-Output"];
 export type CompatClientOptions = ClientOptions & {
   apiKey?: string | null;
   baseUrl?: string | null;
-  // Stainless-shape capital-U alias. Some internal callers
-  // (backend/local-websocket-server, backend/lambda/websocket-llm) still
-  // pass `baseURL`; without this alias the value falls through unused
-  // and the runtime defaults to api.zeroset.com.
+  // Legacy capital-U alias. Some internal callers, including the
+  // local playground WebSocket server, still pass `baseURL`; without this
+  // alias the value falls through unused and the runtime defaults to
+  // api.zeroset.com.
   baseURL?: string | null;
-  // Stainless-shape alias for `timeoutMs`. Same compat reason.
+  // Legacy alias for `timeoutMs`. Same compat reason.
   timeout?: number | null;
-  bearerToken?: string | null;
 };
 
 export interface MemoryCommonInput {
@@ -73,7 +72,7 @@ type MemoryAppendBody = Schemas["AppendMemoryRequest"];
 
 export class Nebula extends NebulaClient {
   constructor(options: CompatClientOptions = {}) {
-    super(normalizeAuthOptions(normalizeClientOptions(options)));
+    super(normalizeClientOptions(options));
   }
 
   /**
@@ -202,31 +201,18 @@ export class Nebula extends NebulaClient {
 
 // ---------- helpers ----------
 
-function normalizeAuthOptions(options: ClientOptions): ClientOptions {
-  if (
-    options.apiKey != null &&
-    options.bearerToken == null &&
-    !looksLikeNebulaAPIKey(options.apiKey)
-  ) {
-    return { ...options, apiKey: undefined, bearerToken: options.apiKey };
-  }
-  return options;
-}
-
 function normalizeClientOptions(options: CompatClientOptions): ClientOptions {
   const {
     apiKey,
     baseUrl: baseUrlAlias,
     baseURL: baseURLCapAlias,
     timeout: timeoutAlias,
-    bearerToken,
     ...rest
   } = options;
   const restClientOptions: ClientOptions = rest;
   return {
     ...restClientOptions,
     apiKey: apiKey ?? undefined,
-    bearerToken: bearerToken ?? undefined,
     baseUrl:
       firstDefined(restClientOptions.baseUrl, baseUrlAlias, baseURLCapAlias) ?? undefined,
     timeoutMs:
@@ -236,13 +222,6 @@ function normalizeClientOptions(options: CompatClientOptions): ClientOptions {
 
 function firstDefined<T>(...values: (T | null | undefined)[]): T | null | undefined {
   return values.find((value) => value !== undefined);
-}
-
-export function looksLikeNebulaAPIKey(token: string): boolean {
-  const parts = token.split(".");
-  if (parts.length !== 2) return false;
-  const [publicPart, rawPart] = parts;
-  return Boolean(rawPart) && (publicPart.startsWith("key_") || publicPart.startsWith("neb_"));
 }
 
 function toMemoryCreateParams(memory: MemoryCreateInput): MemoryCreateBody {
