@@ -28,7 +28,6 @@ import { Nebula } from "@nebula-ai/sdk";
 
 const client = new Nebula({
   apiKey: process.env.NEBULA_API_KEY,
-  // or: bearerToken: process.env.NEBULA_BEARER_TOKEN,
 });
 
 const result = await client.memories.create({
@@ -47,16 +46,11 @@ a `memory_id` is present); prefer the resource methods for everything else.
 
 ## Auth
 
-Pass either `apiKey` (for Nebula API keys) or `bearerToken` (for JWTs)
-when constructing the client. If you pass an opaque-looking token via
-`apiKey` (one that isn't prefixed with `key_` or `neb_`), the DX layer
-automatically routes it through the `Authorization: Bearer` header
-instead — handy when your app exchanges a workspace token for the SDK
-and doesn't want to think about which header to use.
+Pass your Nebula API key as `apiKey` when constructing the client. It is sent
+via the `Authorization: Bearer` header.
 
 ```ts
 new Nebula({ apiKey: process.env.NEBULA_API_KEY });
-new Nebula({ bearerToken: process.env.NEBULA_BEARER_TOKEN });
 ```
 
 ## Errors
