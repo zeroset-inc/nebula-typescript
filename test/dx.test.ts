@@ -81,6 +81,21 @@ describe("DX layer", () => {
     expect(calls[0].body).toMatchObject({ raw_text: "shorthand" });
   });
 
+  test("storeMemory forwards client idempotency key", async () => {
+    const { fetchImpl, calls } = makeMockFetch(() =>
+      jsonResponse(200, { results: { id: "mem_x" } })
+    );
+    const client = new Nebula({ baseUrl: "https://api.example.com", fetchImpl });
+    await client.storeMemory({
+      collection_id: "c1",
+      raw_text: "hello",
+      clientIdempotencyKey: "idem-123",
+    });
+    expect(calls[0].body).toMatchObject({
+      client_idempotency_key: "idem-123",
+    });
+  });
+
   test("storeMemory(messages) sets kind='conversation' and omits engram_type", async () => {
     const { fetchImpl, calls } = makeMockFetch(() =>
       jsonResponse(200, { results: { id: "mem_conv" } })
