@@ -15,8 +15,8 @@
 //   - Validation-error envelope (type/message/code/details/request_id) round-trip
 //   - Server-error envelope round-trip
 //
-// Steps that depend on Hatchet (memory ingestion) are skipped if
-// `NEBULA_E2E_SKIP_INGESTION=1`. The local dev stack's Hatchet often
+// Steps that depend on Orchestration (memory ingestion) are skipped if
+// `NEBULA_E2E_SKIP_INGESTION=1`. The local dev stack's Orchestration often
 // can't migrate its DB within the goose timeout; that's not an SDK issue.
 
 import {
@@ -102,7 +102,7 @@ async function main(): Promise<void> {
   }
   assert(validationCaught, "422 propagates as NebulaValidationError");
 
-  // 6. Memory ingestion (gated — depends on Hatchet which is flaky locally)
+  // 6. Memory ingestion (gated — depends on Orchestration which is flaky locally)
   if (!SKIP_INGESTION) {
     let serverErrorObserved = false;
     try {
@@ -114,7 +114,7 @@ async function main(): Promise<void> {
     } catch (e) {
       if (e instanceof NebulaServerError) {
         serverErrorObserved = true;
-        console.log(`  (got 500: ${(e as NebulaServerError).type}, likely Hatchet outage — set NEBULA_E2E_SKIP_INGESTION=1 to skip)`);
+        console.log(`  (got 500: ${(e as NebulaServerError).type}, likely Orchestration outage — set NEBULA_E2E_SKIP_INGESTION=1 to skip)`);
       } else {
         throw e;
       }
