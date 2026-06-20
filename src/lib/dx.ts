@@ -49,6 +49,8 @@ export interface MemoryCommonInput {
 }
 
 export interface MemoryCreateInput extends MemoryCommonInput {
+  client_idempotency_key?: string | null;
+  clientIdempotencyKey?: string | null;
   kind?: Schemas["EngramKind"] | null;
   name?: string | null;
   speaker_id?: string | null;
@@ -226,11 +228,20 @@ function firstDefined<T>(...values: (T | null | undefined)[]): T | null | undefi
 
 function toMemoryCreateParams(memory: MemoryCreateInput): MemoryCreateBody {
   const collectionID = memory.collection_id ?? memory.collectionId ?? undefined;
-  const { collectionId: _ignore, content, memory_id: _ignoreMemoryID, ...rest } = memory;
+  const {
+    collectionId: _ignore,
+    clientIdempotencyKey,
+    content,
+    memory_id: _ignoreMemoryID,
+    ...rest
+  } = memory;
   const params: Record<string, unknown> = { ...rest };
 
   if (collectionID !== undefined) {
     params.collection_id = collectionID;
+  }
+  if (clientIdempotencyKey != null) {
+    params.client_idempotency_key = clientIdempotencyKey;
   }
   if (content != null) {
     if (typeof content === "string") {
