@@ -43,6 +43,32 @@ export class MemoriesResource {
   }
 
   /**
+   * Complete multipart upload session
+   *
+   * Finalize an upload session after every multipart upload part has been uploaded.
+   * @operationId memories.completeUpload
+   * @endpoint POST /v1/memories/upload/{upload_session_id}/complete
+   */
+  async completeUpload(
+    params: {
+  uploadSessionId: string;
+  body: components["schemas"]["CompleteMultipartUploadRequest"];
+},
+    options?: RequestOptions,
+  ): Promise<components["schemas"]["CompleteMultipartUploadResponse"]> {
+    const response = (await this.core.request<components["schemas"]["WrappedCompleteMultipartUploadResponse"]>({
+      method: "POST",
+      path: "/v1/memories/upload/{upload_session_id}/complete",
+      pathParams: { upload_session_id: params.uploadSessionId },
+      query: undefined,
+      body: params.body,
+      idempotent: false,
+      signal: options?.signal,
+    })) as { results: components["schemas"]["CompleteMultipartUploadResponse"] };
+    return response.results;
+  }
+
+  /**
    * Create a new memory (conversation or document)
    *
    * Create a new memory (conversation or document) using clean JSON body.
@@ -74,26 +100,9 @@ export class MemoriesResource {
   }
 
   /**
-   * Get presigned URL for large file upload
+   * Create multipart upload session
    *
-   * Get a presigned URL for uploading large files directly to S3.
-   *
-   * Use this for files larger than 5MB that cannot be sent inline as base64.
-   * After uploading, reference the file in memory creation using S3FileReference.
-   *
-   * Args:
-   *     filename: Original filename (e.g., "image.jpg")
-   *     content_type: MIME type (e.g., "image/jpeg", "application/pdf")
-   *     file_size: Expected file size in bytes (max 100MB)
-   *
-   * Returns:
-   *     dict with:
-   *     - upload_url: Presigned URL for PUT request (expires in 1 hour)
-   *     - upload_headers: Headers that must be sent with the presigned PUT request
-   *     - s3_key: The S3 key to reference in memory creation
-   *     - bucket: S3 bucket name
-   *     - expires_in: Seconds until URL expires
-   *     - max_size: Maximum allowed file size
+   * Create a workspace-scoped multipart upload session.
    * @operationId memories.createUpload
    * @endpoint POST /v1/memories/upload
    */
@@ -105,17 +114,21 @@ export class MemoriesResource {
   contentType: string;
   /** Expected file size in bytes (max 100MB) */
   fileSize: number;
+  /** Optional target collection for workspace-scoped uploads. */
+  collectionId?: string | null;
+  /** Optional client key for retrying upload-session creation. */
+  clientIdempotencyKey?: string | null;
 },
     options?: RequestOptions,
-  ): Promise<components["schemas"]["PresignedUploadResponse"]> {
-    const response = (await this.core.request<components["schemas"]["WrappedPresignedUploadResponse"]>({
+  ): Promise<components["schemas"]["MultipartUploadSessionResponse"]> {
+    const response = (await this.core.request<components["schemas"]["WrappedMultipartUploadSessionResponse"]>({
       method: "POST",
       path: "/v1/memories/upload",
       pathParams: {},
-      query: { filename: params.filename, content_type: params.contentType, file_size: params.fileSize },
+      query: { filename: params.filename, content_type: params.contentType, file_size: params.fileSize, collection_id: params.collectionId, client_idempotency_key: params.clientIdempotencyKey },
       idempotent: false,
       signal: options?.signal,
-    })) as { results: components["schemas"]["PresignedUploadResponse"] };
+    })) as { results: components["schemas"]["MultipartUploadSessionResponse"] };
     return response.results;
   }
 
@@ -179,17 +192,16 @@ export class MemoriesResource {
   }
 
   /**
-   * Delete a previously uploaded S3 file
+   * Delete a pending upload session
    *
-   * Delete a file from S3 that was uploaded via a presigned URL.
-   * Verifies the caller owns the file via S3 object metadata.
+   * Delete a pending upload session and its staged object.
    * @operationId memories.deleteUpload
    * @endpoint DELETE /v1/memories/upload
    */
   async deleteUpload(
     params: {
-  /** S3 key of the file to delete (returned by POST /memories/upload) */
-  s3Key: string;
+  /** Upload session ID returned by memories.createUpload. */
+  uploadSessionId: string;
 },
     options?: RequestOptions,
   ): Promise<components["schemas"]["GenericMessageResponse"]> {
@@ -197,7 +209,7 @@ export class MemoriesResource {
       method: "DELETE",
       path: "/v1/memories/upload",
       pathParams: {},
-      query: { s3_key: params.s3Key },
+      query: { upload_session_id: params.uploadSessionId },
       idempotent: true,
       signal: options?.signal,
     })) as { results: components["schemas"]["GenericMessageResponse"] };
@@ -337,6 +349,33 @@ export class MemoriesResource {
       idempotent: false,
       signal: options?.signal,
     })) as { results: components["schemas"]["CompactMemoryRecallResponse"] | components["schemas"]["MemoryRecall"] | components["schemas"]["SnapshotSearchResult"] };
+    return response.results;
+  }
+
+  /**
+   * Create multipart upload part URL
+   *
+   * Create a presigned URL for uploading one part of an existing memory upload session.
+   * @operationId memories.signUploadPart
+   * @endpoint POST /v1/memories/upload/{upload_session_id}/parts/{part_number}
+   */
+  async signUploadPart(
+    params: {
+  uploadSessionId: string;
+  partNumber: number;
+  /** Base64-encoded SHA-256 checksum for this part. */
+  checksumSha256: string;
+},
+    options?: RequestOptions,
+  ): Promise<components["schemas"]["MultipartUploadPartResponse"]> {
+    const response = (await this.core.request<components["schemas"]["WrappedMultipartUploadPartResponse"]>({
+      method: "POST",
+      path: "/v1/memories/upload/{upload_session_id}/parts/{part_number}",
+      pathParams: { upload_session_id: params.uploadSessionId, part_number: params.partNumber },
+      query: { checksum_sha256: params.checksumSha256 },
+      idempotent: false,
+      signal: options?.signal,
+    })) as { results: components["schemas"]["MultipartUploadPartResponse"] };
     return response.results;
   }
 
