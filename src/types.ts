@@ -93,8 +93,9 @@ export interface paths {
          *
          *     This endpoint allows deletion of a collection identified by its
          *     UUID. The user must have appropriate permissions to delete the
-         *     collection. Deleting a collection removes all associations but does
-         *     not delete the engrams within it.
+         *     collection. The collection is marked as deleting immediately and
+         *     graph/S3 cleanup continues asynchronously. Deleting a collection
+         *     removes all associations but does not delete the engrams within it.
          */
         delete: operations["collections.delete"];
         options?: never;
@@ -374,33 +375,55 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Get presigned URL for large file upload
-         * @description Get a presigned URL for uploading large files directly to S3.
-         *
-         *     Use this for files larger than 5MB that cannot be sent inline as base64.
-         *     After uploading, reference the file in memory creation using S3FileReference.
-         *
-         *     Args:
-         *         filename: Original filename (e.g., "image.jpg")
-         *         content_type: MIME type (e.g., "image/jpeg", "application/pdf")
-         *         file_size: Expected file size in bytes (max 100MB)
-         *
-         *     Returns:
-         *         dict with:
-         *         - upload_url: Presigned URL for PUT request (expires in 1 hour)
-         *         - upload_headers: Headers that must be sent with the presigned PUT request
-         *         - s3_key: The S3 key to reference in memory creation
-         *         - bucket: S3 bucket name
-         *         - expires_in: Seconds until URL expires
-         *         - max_size: Maximum allowed file size
+         * Create multipart upload session
+         * @description Create a workspace-scoped multipart upload session.
          */
         post: operations["memories.createUpload"];
         /**
-         * Delete a previously uploaded S3 file
-         * @description Delete a file from S3 that was uploaded via a presigned URL.
-         *     Verifies the caller owns the file via S3 object metadata.
+         * Delete a pending upload session
+         * @description Delete a pending upload session and its staged object.
          */
         delete: operations["memories.deleteUpload"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/memories/upload/{upload_session_id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Complete multipart upload session
+         * @description Finalize an upload session after every multipart upload part has been uploaded.
+         */
+        post: operations["memories.completeUpload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/memories/upload/{upload_session_id}/parts/{part_number}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create multipart upload part URL
+         * @description Create a presigned URL for uploading one part of an existing memory upload session.
+         */
+        post: operations["memories.signUploadPart"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -904,7 +927,7 @@ export interface components {
              * Content
              * @description Message content. Use a string for text-only messages or a list of content parts for multimodal content.
              */
-            content: string | (components["schemas"]["TextContentRequest"] | components["schemas"]["FileContentRequest"] | components["schemas"]["S3FileReferenceRequest"])[];
+            content: string | (components["schemas"]["TextContentRequest"] | components["schemas"]["FileContentRequest"] | components["schemas"]["FileReferenceRequest"])[];
             /**
              * Metadata
              * @description Optional message-level metadata
@@ -1188,6 +1211,42 @@ export interface components {
              */
             token_count?: number;
         };
+        /** CompleteMultipartUploadRequest */
+        CompleteMultipartUploadRequest: {
+            /**
+             * Expected Sha256
+             * @description Full-object SHA-256 hex digest.
+             */
+            expected_sha256: string;
+            /** Parts */
+            parts: components["schemas"]["CompletedMultipartUploadPart"][];
+        };
+        /** CompleteMultipartUploadResponse */
+        CompleteMultipartUploadResponse: {
+            /** Byte Size */
+            byte_size: number;
+            /** Content Type */
+            content_type: string;
+            /** Raw Sha256 */
+            raw_sha256: string;
+            /**
+             * Upload Session Id
+             * Format: uuid
+             */
+            upload_session_id: string;
+        };
+        /** CompletedMultipartUploadPart */
+        CompletedMultipartUploadPart: {
+            /**
+             * Checksum Sha256
+             * @description Base64-encoded SHA-256 checksum returned for the part.
+             */
+            checksum_sha256: string;
+            /** Etag */
+            etag: string;
+            /** Part Number */
+            part_number: number;
+        };
         /** ConnectRequest */
         ConnectRequest: {
             /**
@@ -1320,7 +1379,7 @@ export interface components {
              * Content
              * @description Message content. Use a string for text-only messages or a list of content parts for multimodal content.
              */
-            content: string | (components["schemas"]["TextContentRequest"] | components["schemas"]["FileContentRequest"] | components["schemas"]["S3FileReferenceRequest"])[];
+            content: string | (components["schemas"]["TextContentRequest"] | components["schemas"]["FileContentRequest"] | components["schemas"]["FileReferenceRequest"])[];
             /**
              * Metadata
              * @description Optional message-level metadata
@@ -1384,6 +1443,11 @@ export interface components {
              */
             chunks?: string[] | null;
             /**
+             * Client Idempotency Key
+             * @description Optional client-supplied key for retrying the same create request without creating duplicate ingestion work.
+             */
+            client_idempotency_key?: string | null;
+            /**
              * Collection Id
              * @description Collection UUID (mutually exclusive with snapshot)
              */
@@ -1392,7 +1456,7 @@ export interface components {
              * Content Parts
              * @description Multimodal content parts (text, images, audio, documents) for document kind.
              */
-            content_parts?: (components["schemas"]["TextContentRequest"] | components["schemas"]["FileContentRequest"] | components["schemas"]["S3FileReferenceRequest"])[] | null;
+            content_parts?: (components["schemas"]["TextContentRequest"] | components["schemas"]["FileContentRequest"] | components["schemas"]["FileReferenceRequest"])[] | null;
             /**
              * Contents
              * @description Batch content strings for snapshot mode
@@ -1581,6 +1645,7 @@ export interface components {
             document?: components["schemas"]["DocumentFields"] | null;
             /** @default pending */
             extraction_status?: components["schemas"]["GraphExtractionStatus"];
+            graph_extraction_progress?: components["schemas"]["GraphExtractionProgress"] | null;
             /**
              * Id
              * Format: uuid
@@ -1779,6 +1844,23 @@ export interface components {
              */
             type: "audio" | "document" | "file" | "image";
         };
+        /**
+         * FileReferenceRequest
+         * @description Reference to a file uploaded through an upload session.
+         */
+        FileReferenceRequest: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "file_ref";
+            /**
+             * Upload Session Id
+             * Format: uuid
+             * @description Upload session returned by memories.createUpload.
+             */
+            upload_session_id: string;
+        };
         /** GenericBooleanResponse */
         GenericBooleanResponse: {
             /** Success */
@@ -1792,6 +1874,44 @@ export interface components {
             memory_id?: string | null;
             /** Message */
             message: string;
+        };
+        /**
+         * GraphExtractionProgress
+         * @description Per-engram graph extraction progress for the latest extraction manifest.
+         */
+        GraphExtractionProgress: {
+            /**
+             * Completed Groups
+             * @default 0
+             */
+            completed_groups?: number;
+            /**
+             * Failed Groups
+             * @default 0
+             */
+            failed_groups?: number;
+            /**
+             * In Flight Groups
+             * @default 0
+             */
+            in_flight_groups?: number;
+            /**
+             * Pending Groups
+             * @default 0
+             */
+            pending_groups?: number;
+            /**
+             * Progress
+             * @default 0
+             */
+            progress?: number;
+            /** @default pending */
+            status?: components["schemas"]["GraphExtractionStatus"];
+            /**
+             * Total Groups
+             * @default 0
+             */
+            total_groups?: number;
         };
         /**
          * GraphExtractionStatus
@@ -2040,6 +2160,7 @@ export interface components {
             document?: components["schemas"]["DocumentFields"] | null;
             /** @default pending */
             extraction_status?: components["schemas"]["GraphExtractionStatus"];
+            graph_extraction_progress?: components["schemas"]["GraphExtractionProgress"] | null;
             /**
              * Id
              * Format: uuid
@@ -2239,6 +2360,37 @@ export interface components {
          * @enum {string}
          */
         MessageType: "system" | "user" | "assistant" | "function" | "tool";
+        /** MultipartUploadPartResponse */
+        MultipartUploadPartResponse: {
+            /** Expires In */
+            expires_in: number;
+            /** Part Number */
+            part_number: number;
+            /** Upload Headers */
+            upload_headers: {
+                [key: string]: string;
+            };
+            /** Upload Url */
+            upload_url: string;
+        };
+        /** MultipartUploadSessionResponse */
+        MultipartUploadSessionResponse: {
+            /** Expires In */
+            expires_in: number;
+            /** Max Size */
+            max_size: number;
+            /**
+             * Part Size
+             * @description Recommended upload part size in bytes.
+             */
+            part_size: number;
+            /**
+             * Upload Session Id
+             * Format: uuid
+             * @description Upload session ID to reference in memory creation.
+             */
+            upload_session_id: string;
+        };
         /**
          * PaginatedCollectionResponse
          * @description Cursor-paginated list of CollectionResponse entries. The wire envelope is ``{data, next_cursor, has_more}``.
@@ -2307,25 +2459,6 @@ export interface components {
              * @description Anchor: the user's most recent trace id. The handler resolves this trace's state_before automatically.
              */
             trace_id?: string | null;
-        };
-        /** PresignedUploadResponse */
-        PresignedUploadResponse: {
-            /** Bucket */
-            bucket: string;
-            /** Download Url */
-            download_url: string;
-            /** Expires In */
-            expires_in: number;
-            /** Max Size */
-            max_size: number;
-            /** S3 Key */
-            s3_key: string;
-            /** Upload Headers */
-            upload_headers: {
-                [key: string]: string;
-            };
-            /** Upload Url */
-            upload_url: string;
         };
         /**
          * RelationshipRecord
@@ -2422,43 +2555,6 @@ export interface components {
              * @description Anchor: the user's most recent trace id. The handler resolves this trace's state_before automatically.
              */
             trace_id?: string | null;
-        };
-        /**
-         * S3FileReferenceRequest
-         * @description Reference to a file uploaded to S3 (for large files).
-         */
-        S3FileReferenceRequest: {
-            /**
-             * Bucket
-             * @description S3 bucket (uses default if not specified)
-             */
-            bucket?: string | null;
-            /**
-             * Filename
-             * @description Original filename
-             */
-            filename?: string | null;
-            /**
-             * Media Type
-             * @description MIME type
-             * @default application/octet-stream
-             */
-            media_type?: string;
-            /**
-             * S3 Key
-             * @description S3 object key
-             */
-            s3_key: string;
-            /**
-             * Size Bytes
-             * @description File size in bytes
-             */
-            size_bytes?: number | null;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "s3_ref";
         };
         /**
          * SearchEffort
@@ -2890,6 +2986,10 @@ export interface components {
         WrappedCompactMemoryRecallResponse: {
             results: components["schemas"]["CompactMemoryRecallResponse"];
         };
+        /** NebulaResults[CompleteMultipartUploadResponse] */
+        WrappedCompleteMultipartUploadResponse: {
+            results: components["schemas"]["CompleteMultipartUploadResponse"];
+        };
         /** NebulaResults[ConnectorConnectResponse] */
         WrappedConnectorConnectResponse: {
             results: components["schemas"]["ConnectorConnectResponse"];
@@ -2945,9 +3045,13 @@ export interface components {
         WrappedMemoryRecall: {
             results: components["schemas"]["MemoryRecall"];
         };
-        /** NebulaResults[PresignedUploadResponse] */
-        WrappedPresignedUploadResponse: {
-            results: components["schemas"]["PresignedUploadResponse"];
+        /** NebulaResults[MultipartUploadPartResponse] */
+        WrappedMultipartUploadPartResponse: {
+            results: components["schemas"]["MultipartUploadPartResponse"];
+        };
+        /** NebulaResults[MultipartUploadSessionResponse] */
+        WrappedMultipartUploadSessionResponse: {
+            results: components["schemas"]["MultipartUploadSessionResponse"];
         };
         /** NebulaResults[Union[SnapshotEnvelope, SnapshotObjectReference]] */
         WrappedSnapshotEnvelopeOrSnapshotObjectReference: {
@@ -4441,6 +4545,10 @@ export interface operations {
                 content_type: string;
                 /** @description Expected file size in bytes (max 100MB) */
                 file_size: number;
+                /** @description Optional target collection for workspace-scoped uploads. */
+                collection_id?: string | null;
+                /** @description Optional client key for retrying upload-session creation. */
+                client_idempotency_key?: string | null;
             };
             header?: never;
             path?: never;
@@ -4457,17 +4565,14 @@ export interface operations {
                     /**
                      * @example {
                      *       "results": {
-                     *         "bucket": "string",
-                     *         "download_url": "string",
                      *         "expires_in": 0,
                      *         "max_size": 0,
-                     *         "s3_key": "string",
-                     *         "upload_headers": {},
-                     *         "upload_url": "string"
+                     *         "part_size": 0,
+                     *         "upload_session_id": "00000000-0000-0000-0000-000000000000"
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["WrappedPresignedUploadResponse"];
+                    "application/json": components["schemas"]["WrappedMultipartUploadSessionResponse"];
                 };
             };
             /** @description Bad Request */
@@ -4520,8 +4625,8 @@ export interface operations {
     "memories.deleteUpload": {
         parameters: {
             query: {
-                /** @description S3 key of the file to delete (returned by POST /memories/upload) */
-                s3_key: string;
+                /** @description Upload session ID returned by memories.createUpload. */
+                upload_session_id: string;
             };
             header?: never;
             path?: never;
@@ -4543,6 +4648,168 @@ export interface operations {
                      *     }
                      */
                     "application/json": components["schemas"]["WrappedGenericMessageResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "memories.completeUpload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                upload_session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompleteMultipartUploadRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "results": {
+                     *         "byte_size": 0,
+                     *         "content_type": "string",
+                     *         "raw_sha256": "string",
+                     *         "upload_session_id": "00000000-0000-0000-0000-000000000000"
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["WrappedCompleteMultipartUploadResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "memories.signUploadPart": {
+        parameters: {
+            query: {
+                /** @description Base64-encoded SHA-256 checksum for this part. */
+                checksum_sha256: string;
+            };
+            header?: never;
+            path: {
+                upload_session_id: string;
+                part_number: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "results": {
+                     *         "expires_in": 0,
+                     *         "part_number": 0,
+                     *         "upload_headers": {},
+                     *         "upload_url": "string"
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["WrappedMultipartUploadPartResponse"];
                 };
             };
             /** @description Bad Request */
