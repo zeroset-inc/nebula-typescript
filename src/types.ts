@@ -93,8 +93,9 @@ export interface paths {
          *
          *     This endpoint allows deletion of a collection identified by its
          *     UUID. The user must have appropriate permissions to delete the
-         *     collection. Deleting a collection removes all associations but does
-         *     not delete the engrams within it.
+         *     collection. The collection is marked as deleting immediately and
+         *     graph/S3 cleanup continues asynchronously. Deleting a collection
+         *     removes all associations but does not delete the engrams within it.
          */
         delete: operations["collections.delete"];
         options?: never;
@@ -374,33 +375,55 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Get presigned URL for large file upload
-         * @description Get a presigned URL for uploading large files directly to S3.
-         *
-         *     Use this for files larger than 5MB that cannot be sent inline as base64.
-         *     After uploading, reference the file in memory creation using S3FileReference.
-         *
-         *     Args:
-         *         filename: Original filename (e.g., "image.jpg")
-         *         content_type: MIME type (e.g., "image/jpeg", "application/pdf")
-         *         file_size: Expected file size in bytes (max 100MB)
-         *
-         *     Returns:
-         *         dict with:
-         *         - upload_url: Presigned URL for PUT request (expires in 1 hour)
-         *         - upload_headers: Headers that must be sent with the presigned PUT request
-         *         - s3_key: The S3 key to reference in memory creation
-         *         - bucket: S3 bucket name
-         *         - expires_in: Seconds until URL expires
-         *         - max_size: Maximum allowed file size
+         * Create multipart upload session
+         * @description Create a workspace-scoped multipart upload session.
          */
         post: operations["memories.createUpload"];
         /**
-         * Delete a previously uploaded S3 file
-         * @description Delete a file from S3 that was uploaded via a presigned URL.
-         *     Verifies the caller owns the file via S3 object metadata.
+         * Delete a pending upload session
+         * @description Delete a pending upload session and its staged object.
          */
         delete: operations["memories.deleteUpload"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/memories/upload/{upload_session_id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Complete multipart upload session
+         * @description Finalize an upload session after every multipart upload part has been uploaded.
+         */
+        post: operations["memories.completeUpload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/memories/upload/{upload_session_id}/parts/{part_number}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create multipart upload part URL
+         * @description Create a presigned URL for uploading one part of an existing memory upload session.
+         */
+        post: operations["memories.signUploadPart"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -509,6 +532,71 @@ export interface paths {
          *     - Content will be processed and added to the engram
          */
         post: operations["memories.append"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/workspaces/{workspace_id}/encryption": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get workspace managed encryption status
+         * @description Current managed-encryption status for the workspace.
+         */
+        get: operations["workspaces.getManagedEncryption"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/workspaces/{workspace_id}/encryption/disable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Disable workspace managed encryption for new writes
+         * @description Stop encrypting new writes under the workspace key. The key stays
+         *     enabled so existing objects remain readable; scheduling key deletion
+         *     is a separate, gated operation.
+         */
+        post: operations["workspaces.disableManagedEncryption"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/workspaces/{workspace_id}/encryption/enable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Enable workspace managed encryption
+         * @description Provision a dedicated Nebula-managed KMS key for the workspace and
+         *     encrypt new graph-plane object writes under it. Forward-only:
+         *     existing objects are re-encrypted lazily as data is rewritten, not
+         *     immediately.
+         */
+        post: operations["workspaces.enableManagedEncryption"];
         delete?: never;
         options?: never;
         head?: never;
@@ -904,7 +992,7 @@ export interface components {
              * Content
              * @description Message content. Use a string for text-only messages or a list of content parts for multimodal content.
              */
-            content: string | (components["schemas"]["TextContentRequest"] | components["schemas"]["FileContentRequest"] | components["schemas"]["S3FileReferenceRequest"])[];
+            content: string | (components["schemas"]["TextContentRequest"] | components["schemas"]["FileContentRequest"] | components["schemas"]["FileReferenceRequest"])[];
             /**
              * Metadata
              * @description Optional message-level metadata
@@ -949,11 +1037,6 @@ export interface components {
             collection_id: string;
             /** @description Optional ingestion configuration override. */
             ingestion_config?: components["schemas"]["IngestionConfig"] | null;
-            /**
-             * @description Ingestion mode for document content.
-             * @default custom
-             */
-            ingestion_mode?: components["schemas"]["IngestionMode"];
             /**
              * Messages
              * @description Messages to append for conversation memories. Each message has content, role, and optional metadata.
@@ -1188,6 +1271,42 @@ export interface components {
              */
             token_count?: number;
         };
+        /** CompleteMultipartUploadRequest */
+        CompleteMultipartUploadRequest: {
+            /**
+             * Expected Sha256
+             * @description Full-object SHA-256 hex digest.
+             */
+            expected_sha256: string;
+            /** Parts */
+            parts: components["schemas"]["CompletedMultipartUploadPart"][];
+        };
+        /** CompleteMultipartUploadResponse */
+        CompleteMultipartUploadResponse: {
+            /** Byte Size */
+            byte_size: number;
+            /** Content Type */
+            content_type: string;
+            /** Raw Sha256 */
+            raw_sha256: string;
+            /**
+             * Upload Session Id
+             * Format: uuid
+             */
+            upload_session_id: string;
+        };
+        /** CompletedMultipartUploadPart */
+        CompletedMultipartUploadPart: {
+            /**
+             * Checksum Sha256
+             * @description Base64-encoded SHA-256 checksum returned for the part.
+             */
+            checksum_sha256: string;
+            /** Etag */
+            etag: string;
+            /** Part Number */
+            part_number: number;
+        };
         /** ConnectRequest */
         ConnectRequest: {
             /**
@@ -1320,7 +1439,7 @@ export interface components {
              * Content
              * @description Message content. Use a string for text-only messages or a list of content parts for multimodal content.
              */
-            content: string | (components["schemas"]["TextContentRequest"] | components["schemas"]["FileContentRequest"] | components["schemas"]["S3FileReferenceRequest"])[];
+            content: string | (components["schemas"]["TextContentRequest"] | components["schemas"]["FileContentRequest"] | components["schemas"]["FileReferenceRequest"])[];
             /**
              * Metadata
              * @description Optional message-level metadata
@@ -1384,6 +1503,11 @@ export interface components {
              */
             chunks?: string[] | null;
             /**
+             * Client Idempotency Key
+             * @description Optional client-supplied key for retrying the same create request without creating duplicate ingestion work.
+             */
+            client_idempotency_key?: string | null;
+            /**
              * Collection Id
              * @description Collection UUID (mutually exclusive with snapshot)
              */
@@ -1392,7 +1516,7 @@ export interface components {
              * Content Parts
              * @description Multimodal content parts (text, images, audio, documents) for document kind.
              */
-            content_parts?: (components["schemas"]["TextContentRequest"] | components["schemas"]["FileContentRequest"] | components["schemas"]["S3FileReferenceRequest"])[] | null;
+            content_parts?: (components["schemas"]["TextContentRequest"] | components["schemas"]["FileContentRequest"] | components["schemas"]["FileReferenceRequest"])[] | null;
             /**
              * Contents
              * @description Batch content strings for snapshot mode
@@ -1400,11 +1524,6 @@ export interface components {
             contents?: string[] | null;
             /** @description Custom ingestion config for documents */
             ingestion_config?: components["schemas"]["IngestionConfig"] | null;
-            /**
-             * @description Ingestion mode for documents
-             * @default fast
-             */
-            ingestion_mode?: components["schemas"]["IngestionMode"] | null;
             /**
              * @description Engram discriminator: ``document`` or ``conversation``. When omitted, ``conversation`` is inferred if ``messages`` is present; otherwise defaults to ``document``.
              * @default document
@@ -1486,7 +1605,19 @@ export interface components {
             trace_id?: string | null;
         };
         /** DeleteMemoriesRequest */
-        DeleteMemoriesRequest: string | string[];
+        DeleteMemoriesRequest: {
+            /**
+             * Collection Id
+             * Format: uuid
+             * @description Collection context for the memory deletion.
+             */
+            collection_id: string;
+            /**
+             * Ids
+             * @description Single engram ID or list of engram IDs to delete.
+             */
+            ids: string | string[];
+        };
         /**
          * DocumentFields
          * @description Document-specific typed fields.
@@ -1581,6 +1712,7 @@ export interface components {
             document?: components["schemas"]["DocumentFields"] | null;
             /** @default pending */
             extraction_status?: components["schemas"]["GraphExtractionStatus"];
+            graph_extraction_progress?: components["schemas"]["GraphExtractionProgress"] | null;
             /**
              * Id
              * Format: uuid
@@ -1779,6 +1911,23 @@ export interface components {
              */
             type: "audio" | "document" | "file" | "image";
         };
+        /**
+         * FileReferenceRequest
+         * @description Reference to a file uploaded through an upload session.
+         */
+        FileReferenceRequest: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "file_ref";
+            /**
+             * Upload Session Id
+             * Format: uuid
+             * @description Upload session returned by memories.createUpload.
+             */
+            upload_session_id: string;
+        };
         /** GenericBooleanResponse */
         GenericBooleanResponse: {
             /** Success */
@@ -1792,6 +1941,44 @@ export interface components {
             memory_id?: string | null;
             /** Message */
             message: string;
+        };
+        /**
+         * GraphExtractionProgress
+         * @description Per-engram graph extraction progress for the latest extraction manifest.
+         */
+        GraphExtractionProgress: {
+            /**
+             * Completed Groups
+             * @default 0
+             */
+            completed_groups?: number;
+            /**
+             * Failed Groups
+             * @default 0
+             */
+            failed_groups?: number;
+            /**
+             * In Flight Groups
+             * @default 0
+             */
+            in_flight_groups?: number;
+            /**
+             * Pending Groups
+             * @default 0
+             */
+            pending_groups?: number;
+            /**
+             * Progress
+             * @default 0
+             */
+            progress?: number;
+            /** @default pending */
+            status?: components["schemas"]["GraphExtractionStatus"];
+            /**
+             * Total Groups
+             * @default 0
+             */
+            total_groups?: number;
         };
         /**
          * GraphExtractionStatus
@@ -1987,11 +2174,6 @@ export interface components {
             vlm_ocr_one_page_per_chunk?: boolean;
         };
         /**
-         * IngestionMode
-         * @enum {string}
-         */
-        IngestionMode: "hi-res" | "ocr" | "fast" | "custom";
-        /**
          * IngestionResponse
          * @example {
          *       "engram_id": "9fbe403b-c11c-5aae-8ade-ef22980c3ad1",
@@ -2040,6 +2222,7 @@ export interface components {
             document?: components["schemas"]["DocumentFields"] | null;
             /** @default pending */
             extraction_status?: components["schemas"]["GraphExtractionStatus"];
+            graph_extraction_progress?: components["schemas"]["GraphExtractionProgress"] | null;
             /**
              * Id
              * Format: uuid
@@ -2239,6 +2422,37 @@ export interface components {
          * @enum {string}
          */
         MessageType: "system" | "user" | "assistant" | "function" | "tool";
+        /** MultipartUploadPartResponse */
+        MultipartUploadPartResponse: {
+            /** Expires In */
+            expires_in: number;
+            /** Part Number */
+            part_number: number;
+            /** Upload Headers */
+            upload_headers: {
+                [key: string]: string;
+            };
+            /** Upload Url */
+            upload_url: string;
+        };
+        /** MultipartUploadSessionResponse */
+        MultipartUploadSessionResponse: {
+            /** Expires In */
+            expires_in: number;
+            /** Max Size */
+            max_size: number;
+            /**
+             * Part Size
+             * @description Recommended upload part size in bytes.
+             */
+            part_size: number;
+            /**
+             * Upload Session Id
+             * Format: uuid
+             * @description Upload session ID to reference in memory creation.
+             */
+            upload_session_id: string;
+        };
         /**
          * PaginatedCollectionResponse
          * @description Cursor-paginated list of CollectionResponse entries. The wire envelope is ``{data, next_cursor, has_more}``.
@@ -2307,25 +2521,6 @@ export interface components {
              * @description Anchor: the user's most recent trace id. The handler resolves this trace's state_before automatically.
              */
             trace_id?: string | null;
-        };
-        /** PresignedUploadResponse */
-        PresignedUploadResponse: {
-            /** Bucket */
-            bucket: string;
-            /** Download Url */
-            download_url: string;
-            /** Expires In */
-            expires_in: number;
-            /** Max Size */
-            max_size: number;
-            /** S3 Key */
-            s3_key: string;
-            /** Upload Headers */
-            upload_headers: {
-                [key: string]: string;
-            };
-            /** Upload Url */
-            upload_url: string;
         };
         /**
          * RelationshipRecord
@@ -2422,43 +2617,6 @@ export interface components {
              * @description Anchor: the user's most recent trace id. The handler resolves this trace's state_before automatically.
              */
             trace_id?: string | null;
-        };
-        /**
-         * S3FileReferenceRequest
-         * @description Reference to a file uploaded to S3 (for large files).
-         */
-        S3FileReferenceRequest: {
-            /**
-             * Bucket
-             * @description S3 bucket (uses default if not specified)
-             */
-            bucket?: string | null;
-            /**
-             * Filename
-             * @description Original filename
-             */
-            filename?: string | null;
-            /**
-             * Media Type
-             * @description MIME type
-             * @default application/octet-stream
-             */
-            media_type?: string;
-            /**
-             * S3 Key
-             * @description S3 object key
-             */
-            s3_key: string;
-            /**
-             * Size Bytes
-             * @description File size in bytes
-             */
-            size_bytes?: number | null;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "s3_ref";
         };
         /**
          * SearchEffort
@@ -2878,6 +3036,50 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        /** WorkspaceEncryptionResponse */
+        WorkspaceEncryptionResponse: {
+            /** Active Propagation Id */
+            active_propagation_id?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Kms Key Id */
+            kms_key_id?: string | null;
+            /** Last Validated At */
+            last_validated_at?: string | null;
+            /** Propagation Completed Items */
+            propagation_completed_items?: number | null;
+            /** Propagation Failed Items */
+            propagation_failed_items?: number | null;
+            /** Propagation Last Error */
+            propagation_last_error?: string | null;
+            /** Propagation Operation */
+            propagation_operation?: string | null;
+            /** Propagation Status */
+            propagation_status?: string | null;
+            /** Propagation Total Items */
+            propagation_total_items?: number | null;
+            status: components["schemas"]["WorkspaceEncryptionStatus"];
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Validation Error */
+            validation_error?: string | null;
+            /**
+             * Workspace Id
+             * Format: uuid
+             */
+            workspace_id: string;
+        };
+        /**
+         * WorkspaceEncryptionStatus
+         * @enum {string}
+         */
+        WorkspaceEncryptionStatus: "pending" | "provisioning" | "activating" | "activation_failed" | "active" | "disabling" | "disable_failed" | "validation_failed" | "disabled";
         /** NebulaResults[AppendMemoryResponse] */
         WrappedAppendMemoryResponse: {
             results: components["schemas"]["AppendMemoryResponse"];
@@ -2889,6 +3091,10 @@ export interface components {
         /** NebulaResults[CompactMemoryRecallResponse] */
         WrappedCompactMemoryRecallResponse: {
             results: components["schemas"]["CompactMemoryRecallResponse"];
+        };
+        /** NebulaResults[CompleteMultipartUploadResponse] */
+        WrappedCompleteMultipartUploadResponse: {
+            results: components["schemas"]["CompleteMultipartUploadResponse"];
         };
         /** NebulaResults[ConnectorConnectResponse] */
         WrappedConnectorConnectResponse: {
@@ -2945,9 +3151,13 @@ export interface components {
         WrappedMemoryRecall: {
             results: components["schemas"]["MemoryRecall"];
         };
-        /** NebulaResults[PresignedUploadResponse] */
-        WrappedPresignedUploadResponse: {
-            results: components["schemas"]["PresignedUploadResponse"];
+        /** NebulaResults[MultipartUploadPartResponse] */
+        WrappedMultipartUploadPartResponse: {
+            results: components["schemas"]["MultipartUploadPartResponse"];
+        };
+        /** NebulaResults[MultipartUploadSessionResponse] */
+        WrappedMultipartUploadSessionResponse: {
+            results: components["schemas"]["MultipartUploadSessionResponse"];
         };
         /** NebulaResults[Union[SnapshotEnvelope, SnapshotObjectReference]] */
         WrappedSnapshotEnvelopeOrSnapshotObjectReference: {
@@ -2969,6 +3179,10 @@ export interface components {
         /** NebulaResults[StorageTargetResponse] */
         WrappedStorageTargetResponse: {
             results: components["schemas"]["StorageTargetResponse"];
+        };
+        /** NebulaResults[WorkspaceEncryptionResponse] */
+        WrappedWorkspaceEncryptionResponse: {
+            results: components["schemas"]["WorkspaceEncryptionResponse"];
         };
     };
     responses: never;
@@ -3070,7 +3284,10 @@ export interface operations {
     "collections.create": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Workspace routing key for edge placement. Must match the request workspace_id when one is provided. For personal workspace creates with no workspace_id, clients may omit this header and route through the active writer. */
+                "X-Nebula-Workspace-Id"?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -4189,7 +4406,10 @@ export interface operations {
     "memories.create": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Collection routing key for edge placement. Required when collection_id is present in the request body. */
+                "X-Nebula-Collection-Id"?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -4283,7 +4503,10 @@ export interface operations {
     "memories.deleteMany": {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Collection routing key for edge placement. Must match collection_id in the request body. */
+                "X-Nebula-Collection-Id": string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -4441,6 +4664,10 @@ export interface operations {
                 content_type: string;
                 /** @description Expected file size in bytes (max 100MB) */
                 file_size: number;
+                /** @description Optional target collection for workspace-scoped uploads. */
+                collection_id?: string | null;
+                /** @description Optional client key for retrying upload-session creation. */
+                client_idempotency_key?: string | null;
             };
             header?: never;
             path?: never;
@@ -4457,17 +4684,14 @@ export interface operations {
                     /**
                      * @example {
                      *       "results": {
-                     *         "bucket": "string",
-                     *         "download_url": "string",
                      *         "expires_in": 0,
                      *         "max_size": 0,
-                     *         "s3_key": "string",
-                     *         "upload_headers": {},
-                     *         "upload_url": "string"
+                     *         "part_size": 0,
+                     *         "upload_session_id": "00000000-0000-0000-0000-000000000000"
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["WrappedPresignedUploadResponse"];
+                    "application/json": components["schemas"]["WrappedMultipartUploadSessionResponse"];
                 };
             };
             /** @description Bad Request */
@@ -4520,8 +4744,8 @@ export interface operations {
     "memories.deleteUpload": {
         parameters: {
             query: {
-                /** @description S3 key of the file to delete (returned by POST /memories/upload) */
-                s3_key: string;
+                /** @description Upload session ID returned by memories.createUpload. */
+                upload_session_id: string;
             };
             header?: never;
             path?: never;
@@ -4543,6 +4767,168 @@ export interface operations {
                      *     }
                      */
                     "application/json": components["schemas"]["WrappedGenericMessageResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "memories.completeUpload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                upload_session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompleteMultipartUploadRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "results": {
+                     *         "byte_size": 0,
+                     *         "content_type": "string",
+                     *         "raw_sha256": "string",
+                     *         "upload_session_id": "00000000-0000-0000-0000-000000000000"
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["WrappedCompleteMultipartUploadResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "memories.signUploadPart": {
+        parameters: {
+            query: {
+                /** @description Base64-encoded SHA-256 checksum for this part. */
+                checksum_sha256: string;
+            };
+            header?: never;
+            path: {
+                upload_session_id: string;
+                part_number: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "results": {
+                     *         "expires_in": 0,
+                     *         "part_number": 0,
+                     *         "upload_headers": {},
+                     *         "upload_url": "string"
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["WrappedMultipartUploadPartResponse"];
                 };
             };
             /** @description Bad Request */
@@ -4752,8 +5138,14 @@ export interface operations {
     };
     "memories.delete": {
         parameters: {
-            query?: never;
-            header?: never;
+            query: {
+                /** @description Collection context for the deletion. */
+                collection_id: string;
+            };
+            header: {
+                /** @description Collection routing key for edge placement. Must match collection_id. */
+                "X-Nebula-Collection-Id": string;
+            };
             path: {
                 /** @description Engram ID */
                 id: string;
@@ -4827,11 +5219,14 @@ export interface operations {
     };
     "memories.update": {
         parameters: {
-            query?: {
+            query: {
                 /** @description Collection context for copy-on-write. If provided and engram is shared, creates a copy before modification. */
-                collection_id?: string | null;
+                collection_id: string;
             };
-            header?: never;
+            header: {
+                /** @description Collection routing key for edge placement. Must match collection_id. */
+                "X-Nebula-Collection-Id": string;
+            };
             path: {
                 /** @description The unique identifier of the memory */
                 id: string;
@@ -4928,7 +5323,10 @@ export interface operations {
     "memories.append": {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Collection routing key for edge placement. Must match collection_id in the request body. */
+                "X-Nebula-Collection-Id": string;
+            };
             path: {
                 /** @description The unique identifier of the engram */
                 id: string;
@@ -4959,6 +5357,228 @@ export interface operations {
                      *     }
                      */
                     "application/json": components["schemas"]["WrappedAppendMemoryResponse"] | components["schemas"]["WrappedIngestionResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "workspaces.getManagedEncryption": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "results": {
+                     *         "created_at": "1970-01-01T00:00:00Z",
+                     *         "status": "pending",
+                     *         "updated_at": "1970-01-01T00:00:00Z",
+                     *         "workspace_id": "00000000-0000-0000-0000-000000000000"
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["WrappedWorkspaceEncryptionResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "workspaces.disableManagedEncryption": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "results": {
+                     *         "created_at": "1970-01-01T00:00:00Z",
+                     *         "status": "pending",
+                     *         "updated_at": "1970-01-01T00:00:00Z",
+                     *         "workspace_id": "00000000-0000-0000-0000-000000000000"
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["WrappedWorkspaceEncryptionResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "workspaces.enableManagedEncryption": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "results": {
+                     *         "created_at": "1970-01-01T00:00:00Z",
+                     *         "status": "pending",
+                     *         "updated_at": "1970-01-01T00:00:00Z",
+                     *         "workspace_id": "00000000-0000-0000-0000-000000000000"
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["WrappedWorkspaceEncryptionResponse"];
                 };
             };
             /** @description Bad Request */
