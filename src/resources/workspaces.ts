@@ -34,6 +34,30 @@ export class WorkspacesResource {
   }
 
   /**
+   * Disable workspace managed encryption for new writes
+   *
+   * Stop encrypting new writes under the workspace key. The key stays
+   * enabled so existing objects remain readable; scheduling key deletion
+   * is a separate, gated operation.
+   * @operationId workspaces.disableManagedEncryption
+   * @endpoint POST /v1/workspaces/{workspace_id}/encryption/disable
+   */
+  async disableManagedEncryption(
+    workspaceId: string,
+    options?: RequestOptions,
+  ): Promise<components["schemas"]["WorkspaceEncryptionResponse"]> {
+    const response = (await this.core.request<components["schemas"]["WrappedWorkspaceEncryptionResponse"]>({
+      method: "POST",
+      path: "/v1/workspaces/{workspace_id}/encryption/disable",
+      pathParams: { workspace_id: workspaceId },
+      query: undefined,
+      idempotent: false,
+      signal: options?.signal,
+    })) as { results: components["schemas"]["WorkspaceEncryptionResponse"] };
+    return response.results;
+  }
+
+  /**
    * Disable workspace storage target
    *
    * Disable a customer storage target for future collection binds.
@@ -55,6 +79,53 @@ export class WorkspacesResource {
       idempotent: false,
       signal: options?.signal,
     })) as { results: components["schemas"]["StorageTargetResponse"] };
+    return response.results;
+  }
+
+  /**
+   * Enable workspace managed encryption
+   *
+   * Provision a dedicated Nebula-managed KMS key for the workspace and
+   * encrypt new graph-plane object writes under it. Forward-only:
+   * existing objects are re-encrypted lazily as data is rewritten, not
+   * immediately.
+   * @operationId workspaces.enableManagedEncryption
+   * @endpoint POST /v1/workspaces/{workspace_id}/encryption/enable
+   */
+  async enableManagedEncryption(
+    workspaceId: string,
+    options?: RequestOptions,
+  ): Promise<components["schemas"]["WorkspaceEncryptionResponse"]> {
+    const response = (await this.core.request<components["schemas"]["WrappedWorkspaceEncryptionResponse"]>({
+      method: "POST",
+      path: "/v1/workspaces/{workspace_id}/encryption/enable",
+      pathParams: { workspace_id: workspaceId },
+      query: undefined,
+      idempotent: false,
+      signal: options?.signal,
+    })) as { results: components["schemas"]["WorkspaceEncryptionResponse"] };
+    return response.results;
+  }
+
+  /**
+   * Get workspace managed encryption status
+   *
+   * Current managed-encryption status for the workspace.
+   * @operationId workspaces.getManagedEncryption
+   * @endpoint GET /v1/workspaces/{workspace_id}/encryption
+   */
+  async getManagedEncryption(
+    workspaceId: string,
+    options?: RequestOptions,
+  ): Promise<components["schemas"]["WorkspaceEncryptionResponse"]> {
+    const response = (await this.core.request<components["schemas"]["WrappedWorkspaceEncryptionResponse"]>({
+      method: "GET",
+      path: "/v1/workspaces/{workspace_id}/encryption",
+      pathParams: { workspace_id: workspaceId },
+      query: undefined,
+      idempotent: true,
+      signal: options?.signal,
+    })) as { results: components["schemas"]["WorkspaceEncryptionResponse"] };
     return response.results;
   }
 
