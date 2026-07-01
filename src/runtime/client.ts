@@ -29,8 +29,16 @@ export interface RequestArgs {
   query?: Record<string, unknown>;
   body?: unknown;
   headers?: Record<string, string>;
+  routing?: EdgeRoutingRule;
   idempotent?: boolean;
   signal?: AbortSignal;
+}
+
+export interface EdgeRoutingRule {
+  header: string;
+  bodyFields?: string[];
+  queryFields?: string[];
+  pathFields?: string[];
 }
 
 /** Per-call options every generated resource method accepts. */
@@ -104,7 +112,11 @@ export class NebulaCore {
   async request<T>(args: RequestArgs): Promise<T> {
     const url = this.buildUrl(args.path, args.pathParams, args.query);
     const hasBody = args.body !== undefined && args.body !== null;
-    const headers = this.buildHeaders(args.headers, hasBody);
+    const routeHeaders = routingHeadersForRequest(args);
+    const headers = this.buildHeaders(
+      { ...routeHeaders, ...(args.headers ?? {}) },
+      hasBody
+    );
     // Spread caller-supplied fetch options first so the runtime-owned
     // method/headers/body always win on key collision. The TS type for
     // `fetchOptions` already excludes those keys, so this is belt-and-
@@ -231,6 +243,63 @@ function filterNullishHeaders(
     if (v !== null && v !== undefined) out[k] = v;
   }
   return out;
+}
+
+function routingHeadersForRequest(args: RequestArgs): Record<string, string> {
+  if (!args.routing) return {};
+  const routeId =
+    stringField(objectBody(args.body), ...(args.routing.bodyFields ?? []))
+    ?? stringField(args.query, ...(args.routing.queryFields ?? []))
+    ?? stringField(args.pathParams, ...(args.routing.pathFields ?? []));
+  return routeId ? { [args.routing.header]: routeId } : {};
+}
+
+function objectBody(body: unknown): Record<string, unknown> | undefined {
+  if (!body || typeof body !== "object" || Array.isArray(body)) return undefined;
+  return body as Record<string, unknown>;
+}
+
+function stringField(
+  body: Record<string, unknown> | undefined,
+  ...names: string[]
+): string | undefined {
+  if (!body) return undefined;
+  for (const name of names) {
+    const routeId = routeIdValue(nestedField(body, name));
+    if (routeId) return routeId;
+  }
+  return undefined;
+}
+
+function nestedField(body: Record<string, unknown>, path: string): unknown {
+  let current: unknown = body;
+  for (const part of path.split(".")) {
+    if (!current || typeof current !== "object" || Array.isArray(current)) {
+      return undefined;
+    }
+    current = (current as Record<string, unknown>)[part];
+  }
+  return current;
+}
+
+function routeIdValue(value: unknown): string | undefined {
+  if (typeof value === "string" && value.length > 0) return value;
+  if (
+    Array.isArray(value) &&
+    value.length === 1 &&
+    typeof value[0] === "string" &&
+    value[0].length > 0
+  ) {
+    return value[0];
+  }
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    const record = value as Record<string, unknown>;
+    if ("$eq" in record) return routeIdValue(record["$eq"]);
+    for (const op of ["$in", "$overlap"]) {
+      if (op in record) return routeIdValue(record[op]);
+    }
+  }
+  return undefined;
 }
 
 function parseRetryAfter(header: string | null): number | undefined {
