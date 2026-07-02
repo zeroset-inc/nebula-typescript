@@ -89,6 +89,158 @@ describe("NebulaClient", () => {
     expect(calls[0].body).toEqual({ query: "hello world" });
   });
 
+  test("single-collection search derives edge routing header", async () => {
+    const { fetchImpl, calls } = makeMockFetch(() =>
+      jsonResponse(200, { results: [], total_entries: 0 })
+    );
+    const client = new NebulaClient({
+      baseUrl: "https://api.example.com",
+      fetchImpl,
+    });
+
+    await client.memories.search({
+      query: "hello",
+      collection_ids: ["33333333-3333-4333-8333-333333333333"],
+    } as never);
+    await client.memories.search({
+      query: "hello",
+      collection_ids: [
+        "33333333-3333-4333-8333-333333333333",
+        "44444444-4444-4444-8444-444444444444",
+      ],
+    } as never);
+
+    expect(calls[0].headers["x-nebula-owner-key"]).toBe(
+      "collection:33333333-3333-4333-8333-333333333333"
+    );
+    expect(calls[1].headers["x-nebula-owner-key"]).toBeUndefined();
+  });
+
+  test("workspace-scoped upload uses canonical query routing", async () => {
+    const workspaceId = "22222222-2222-4222-8222-222222222222";
+    const { fetchImpl, calls } = makeMockFetch(() =>
+      jsonResponse(200, {
+        results: {
+          upload_session_id: "33333333-3333-4333-8333-333333333333",
+          part_size: 8388608,
+          expires_in: 3600,
+          max_size: 104857600,
+        },
+      })
+    );
+    const client = new NebulaClient({
+      baseUrl: "https://api.example.com",
+      fetchImpl,
+    });
+
+    await client.memories.createUpload({
+      filename: "image.png",
+      contentType: "image/png",
+      fileSize: 12,
+      workspaceId,
+    } as never);
+
+    const url = new URL(calls[0].url);
+    expect(url.pathname).toBe("/v1/memories/upload");
+    expect(url.searchParams.get("workspace_id")).toBe(workspaceId);
+    expect(calls[0].headers["x-nebula-owner-key"]).toBeUndefined();
+  });
+
+  test("filter-scoped search derives edge routing header", async () => {
+    const collectionId = "33333333-3333-4333-8333-333333333333";
+    const otherCollectionId = "44444444-4444-4444-8444-444444444444";
+    const { fetchImpl, calls } = makeMockFetch(() =>
+      jsonResponse(200, { results: [], total_entries: 0 })
+    );
+    const client = new NebulaClient({
+      baseUrl: "https://api.example.com",
+      fetchImpl,
+    });
+
+    await client.memories.search({
+      query: "hello",
+      filters: {
+        collection_ids: {
+          $overlap: [collectionId],
+        },
+      },
+    } as never);
+    await client.memories.search({
+      query: "hello",
+      filters: {
+        collection_ids: {
+          $overlap: [collectionId, otherCollectionId],
+        },
+      },
+    } as never);
+    await client.memories.search({
+      query: "hello",
+      collection_id: collectionId,
+    } as never);
+
+    expect(calls[0].headers["x-nebula-owner-key"]).toBe(`collection:${collectionId}`);
+    expect(calls[1].headers["x-nebula-owner-key"]).toBeUndefined();
+    expect(calls[2].headers["x-nebula-owner-key"]).toBeUndefined();
+  });
+
+  test("write calls derive edge routing headers from body ids", async () => {
+    const { fetchImpl, calls } = makeMockFetch((req) => {
+      if (req.url.endsWith("/v1/collections")) {
+        return jsonResponse(200, { results: { id: "collection-id" } });
+      }
+      if (req.url.endsWith("/v1/memories")) {
+        return jsonResponse(200, { results: { id: "memory-id", message: "ok" } });
+      }
+      return jsonResponse(200, { results: { message: "ok" } });
+    });
+    const client = new NebulaClient({
+      baseUrl: "https://api.example.com",
+      fetchImpl,
+    });
+
+    await client.collections.create({ name: "Personal collection" } as never);
+    await client.collections.create({
+      name: "Team collection",
+      workspace_id: "22222222-2222-4222-8222-222222222222",
+    } as never);
+    await client.memories.create({
+      collection_id: "33333333-3333-4333-8333-333333333333",
+      raw_text: "hello",
+    } as never);
+    await client.memories.append({
+      id: "44444444-4444-4444-8444-444444444444",
+      body: {
+        collection_id: "55555555-5555-4555-8555-555555555555",
+        raw_text: "more",
+      },
+    } as never);
+
+    expect(calls[0].headers["x-nebula-owner-key"]).toBeUndefined();
+    expect(calls[1].headers["x-nebula-owner-key"]).toBe(
+      "workspace:22222222-2222-4222-8222-222222222222"
+    );
+    expect(calls[2].headers["x-nebula-owner-key"]).toBe(
+      "collection:33333333-3333-4333-8333-333333333333"
+    );
+    expect(calls[3].headers["x-nebula-owner-key"]).toBe(
+      "collection:55555555-5555-4555-8555-555555555555"
+    );
+  });
+
+  test("zero-config personal collection create does not require a routing header", async () => {
+    const { fetchImpl, calls } = makeMockFetch(() =>
+      jsonResponse(200, { results: { id: "collection-id" } })
+    );
+    const client = new NebulaClient({
+      baseUrl: "https://api.example.com",
+      fetchImpl,
+    });
+
+    await client.collections.create({ name: "Personal collection" } as never);
+
+    expect(calls[0].headers["x-nebula-owner-key"]).toBeUndefined();
+  });
+
   test("collections.list serializes query params (cursor + limit)", async () => {
     const { fetchImpl, calls } = makeMockFetch(() =>
       jsonResponse(200, { data: [], next_cursor: null, has_more: false })
