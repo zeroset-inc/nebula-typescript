@@ -45,10 +45,11 @@ export interface MemoryCommonInput {
   messages?: unknown[] | null;
   metadata?: { [key: string]: unknown } | null;
   ingestion_config?: unknown;
-  ingestion_mode?: string | null;
 }
 
 export interface MemoryCreateInput extends MemoryCommonInput {
+  client_idempotency_key?: string | null;
+  clientIdempotencyKey?: string | null;
   kind?: Schemas["EngramKind"] | null;
   name?: string | null;
   speaker_id?: string | null;
@@ -59,9 +60,8 @@ export interface MemoryCreateInput extends MemoryCommonInput {
   memory_id?: undefined | null;
 }
 
-export interface MemoryAppendInput extends Omit<MemoryCommonInput, "ingestion_mode" | "messages"> {
+export interface MemoryAppendInput extends Omit<MemoryCommonInput, "messages"> {
   memory_id: string;
-  ingestion_mode?: string | null;
   messages?: unknown[] | null;
 }
 
@@ -226,11 +226,20 @@ function firstDefined<T>(...values: (T | null | undefined)[]): T | null | undefi
 
 function toMemoryCreateParams(memory: MemoryCreateInput): MemoryCreateBody {
   const collectionID = memory.collection_id ?? memory.collectionId ?? undefined;
-  const { collectionId: _ignore, content, memory_id: _ignoreMemoryID, ...rest } = memory;
+  const {
+    collectionId: _ignore,
+    clientIdempotencyKey,
+    content,
+    memory_id: _ignoreMemoryID,
+    ...rest
+  } = memory;
   const params: Record<string, unknown> = { ...rest };
 
   if (collectionID !== undefined) {
     params.collection_id = collectionID;
+  }
+  if (clientIdempotencyKey != null) {
+    params.client_idempotency_key = clientIdempotencyKey;
   }
   if (content != null) {
     if (typeof content === "string") {
@@ -251,7 +260,7 @@ function toMemoryAppendParams(memory: MemoryAppendInput): MemoryAppendBody {
     throw new Error("collection_id is required when appending to an existing memory");
   }
   const params: Record<string, unknown> = { collection_id: collectionID };
-  for (const key of ["metadata", "ingestion_config", "ingestion_mode", "raw_text", "chunks", "messages"] as const) {
+  for (const key of ["metadata", "ingestion_config", "raw_text", "chunks", "messages"] as const) {
     const value = memory[key as keyof MemoryAppendInput];
     if (value != null) params[key] = value;
   }
