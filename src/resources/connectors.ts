@@ -83,6 +83,30 @@ export class ConnectorsResource {
   }
 
   /**
+   * List workspace connector OAuth app registrations
+   *
+   * Return the workspace-level OAuth app registrations used by Google and Microsoft 365 connectors for the requested collection's workspace. Client secrets are never returned.
+   * @operationId connectors.listOAuthApps
+   * @endpoint GET /v1/connectors/oauth-apps
+   */
+  async listOAuthApps(
+    params: {
+  collectionId: string;
+},
+    options?: RequestOptions,
+  ): Promise<Array<components["schemas"]["ConnectorOAuthAppResponse"]>> {
+    const response = (await this.core.request<components["schemas"]["WrappedListOfConnectorOAuthAppResponse"]>({
+      method: "GET",
+      path: "/v1/connectors/oauth-apps",
+      pathParams: {},
+      query: { collection_id: params.collectionId },
+      idempotent: true,
+      signal: options?.signal,
+    })) as { results: Array<components["schemas"]["ConnectorOAuthAppResponse"]> };
+    return response.results;
+  }
+
+  /**
    * List available connector providers
    *
    * Return the set of connector provider identifiers (e.g. `google_drive`, `slack`) that this Nebula instance is configured to expose. Pass one of these to `POST /connectors/{provider}/connect` to start an OAuth flow.
@@ -142,6 +166,32 @@ export class ConnectorsResource {
       idempotent: true,
       signal: options?.signal,
     })) as { results: components["schemas"]["ConnectorSyncResponse"] };
+    return response.results;
+  }
+
+  /**
+   * Update a workspace connector OAuth app
+   *
+   * Update non-secret workspace OAuth app settings for a collection's workspace. Google apps can provide Pub/Sub settings to enable Gmail real-time sync. Client secrets are never returned.
+   * @operationId connectors.updateOAuthApp
+   * @endpoint PATCH /v1/connectors/oauth-apps/{provider_family}
+   */
+  async updateOAuthApp(
+    params: {
+  providerFamily: string;
+  body: components["schemas"]["ConnectorOAuthAppUpdateRequest"];
+},
+    options?: RequestOptions,
+  ): Promise<components["schemas"]["ConnectorOAuthAppResponse"]> {
+    const response = (await this.core.request<components["schemas"]["WrappedConnectorOAuthAppResponse"]>({
+      method: "PATCH",
+      path: "/v1/connectors/oauth-apps/{provider_family}",
+      pathParams: { provider_family: params.providerFamily },
+      query: undefined,
+      body: params.body,
+      idempotent: false,
+      signal: options?.signal,
+    })) as { results: components["schemas"]["ConnectorOAuthAppResponse"] };
     return response.results;
   }
 
