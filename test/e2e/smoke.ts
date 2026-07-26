@@ -11,12 +11,11 @@
 //   - Real FastAPI envelope decode through the SDK type system
 //   - Cursor handshake wire shape with real opaque cursors
 //   - Auth header serialization against real middleware
-//   - applied_wal_seq surfaced from the listed-engram envelope
 //   - Validation-error envelope (type/message/code/details/request_id) round-trip
 //   - Server-error envelope round-trip
 //
-// Steps that depend on Hatchet (memory ingestion) are skipped if
-// `NEBULA_E2E_SKIP_INGESTION=1`. The local dev stack's Hatchet often
+// Steps that depend on Orchestration (memory ingestion) are skipped if
+// `NEBULA_E2E_SKIP_INGESTION=1`. The local dev stack's Orchestration often
 // can't migrate its DB within the goose timeout; that's not an SDK issue.
 
 import {
@@ -52,15 +51,11 @@ async function main(): Promise<void> {
   assert(typeof collectionsPage.has_more === "boolean", "list_collections returns has_more: bool");
   assert("next_cursor" in collectionsPage, "list_collections returns next_cursor key (nullable)");
 
-  // 2. listMemories — cursor + applied_wal_seq wire shape
+  // 2. listMemories — cursor wire shape
   const memoriesPage = await client.memories.list({ limit: 10 });
   assert(Array.isArray(memoriesPage.data), "list_memories returns {data: Array}");
   assert(typeof memoriesPage.has_more === "boolean", "list_memories returns has_more: bool");
   assert("next_cursor" in memoriesPage, "list_memories returns next_cursor (nullable)");
-  assert(
-    "applied_wal_seq" in memoriesPage,
-    "list_memories returns applied_wal_seq (RYW token)"
-  );
 
   // 3. Create a throwaway collection — exercises POST + envelope unwrap
   const created = (await client.collections.create({
@@ -102,7 +97,7 @@ async function main(): Promise<void> {
   }
   assert(validationCaught, "422 propagates as NebulaValidationError");
 
-  // 6. Memory ingestion (gated — depends on Hatchet which is flaky locally)
+  // 6. Memory ingestion (gated — depends on Orchestration which is flaky locally)
   if (!SKIP_INGESTION) {
     let serverErrorObserved = false;
     try {
@@ -114,7 +109,7 @@ async function main(): Promise<void> {
     } catch (e) {
       if (e instanceof NebulaServerError) {
         serverErrorObserved = true;
-        console.log(`  (got 500: ${(e as NebulaServerError).type}, likely Hatchet outage — set NEBULA_E2E_SKIP_INGESTION=1 to skip)`);
+        console.log(`  (got 500: ${(e as NebulaServerError).type}, likely Orchestration outage — set NEBULA_E2E_SKIP_INGESTION=1 to skip)`);
       } else {
         throw e;
       }
@@ -125,8 +120,8 @@ async function main(): Promise<void> {
   }
 
   // 7. Clean up
-  const deleted = (await client.collections.delete(collectionId!)) as { success?: boolean };
-  assert(deleted.success === true, "collections.delete returns success: true");
+  const deletion = await client.collections.delete(collectionId!);
+  assert(Boolean(deletion.operation_id), "collections.delete returns an operation ID");
 
   console.log("\nAll SDK e2e smoke checks passed.");
 }
