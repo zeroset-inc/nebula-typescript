@@ -69,13 +69,6 @@ while (has_more) {
 either drop it or query a dedicated count endpoint (none exists today —
 file an issue if you need one).
 
-### 3. `applied_wal_seq` on `listMemories`
-
-For read-your-writes scenarios, `listMemories` now returns an `applied_wal_seq`
-field. Pair it with `min_applied_wal_seq` on the request to assert that a
-prior write is visible. Default behavior is unchanged for callers that don't
-pass `min_applied_wal_seq`.
-
 ## Non-breaking improvements
 
 - `storeMemories` accepts `{ maxConcurrency }` (default 8) — bounded worker
