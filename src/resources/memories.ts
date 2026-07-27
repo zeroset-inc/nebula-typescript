@@ -36,9 +36,39 @@ export class MemoriesResource {
       pathParams: { id: params.id },
       query: undefined,
       body: params.body,
+      routing: {
+        owner: "collection",
+        bodyFields: ["collection_id","collectionId"],
+      },
       idempotent: false,
       signal: options?.signal,
     })) as { results: components["schemas"]["AppendMemoryResponse"] | components["schemas"]["IngestionResponse"] };
+    return response.results;
+  }
+
+  /**
+   * Complete multipart upload session
+   *
+   * Finalize an upload session after every multipart upload part has been uploaded.
+   * @operationId memories.completeUpload
+   * @endpoint POST /v1/memories/upload/{upload_session_id}/complete
+   */
+  async completeUpload(
+    params: {
+  uploadSessionId: string;
+  body: components["schemas"]["CompleteMultipartUploadRequest"];
+},
+    options?: RequestOptions,
+  ): Promise<components["schemas"]["CompleteMultipartUploadResponse"]> {
+    const response = (await this.core.request<components["schemas"]["WrappedCompleteMultipartUploadResponse"]>({
+      method: "POST",
+      path: "/v1/memories/upload/{upload_session_id}/complete",
+      pathParams: { upload_session_id: params.uploadSessionId },
+      query: undefined,
+      body: params.body,
+      idempotent: false,
+      signal: options?.signal,
+    })) as { results: components["schemas"]["CompleteMultipartUploadResponse"] };
     return response.results;
   }
 
@@ -67,6 +97,10 @@ export class MemoriesResource {
       pathParams: {},
       query: undefined,
       body: body,
+      routing: {
+        owner: "collection",
+        bodyFields: ["collection_id","collectionId"],
+      },
       idempotent: false,
       signal: options?.signal,
     })) as { results: components["schemas"]["MemoryCreateAcceptedResponse"] | components["schemas"]["SnapshotMutationResult"] };
@@ -74,26 +108,9 @@ export class MemoriesResource {
   }
 
   /**
-   * Get presigned URL for large file upload
+   * Create multipart upload session
    *
-   * Get a presigned URL for uploading large files directly to S3.
-   *
-   * Use this for files larger than 5MB that cannot be sent inline as base64.
-   * After uploading, reference the file in memory creation using S3FileReference.
-   *
-   * Args:
-   *     filename: Original filename (e.g., "image.jpg")
-   *     content_type: MIME type (e.g., "image/jpeg", "application/pdf")
-   *     file_size: Expected file size in bytes (max 100MB)
-   *
-   * Returns:
-   *     dict with:
-   *     - upload_url: Presigned URL for PUT request (expires in 1 hour)
-   *     - upload_headers: Headers that must be sent with the presigned PUT request
-   *     - s3_key: The S3 key to reference in memory creation
-   *     - bucket: S3 bucket name
-   *     - expires_in: Seconds until URL expires
-   *     - max_size: Maximum allowed file size
+   * Create a workspace-scoped multipart upload session.
    * @operationId memories.createUpload
    * @endpoint POST /v1/memories/upload
    */
@@ -105,91 +122,101 @@ export class MemoriesResource {
   contentType: string;
   /** Expected file size in bytes (max 100MB) */
   fileSize: number;
+  /** Optional target collection for workspace-scoped uploads. */
+  collectionId?: string | null;
+  /** Optional workspace for collectionless uploads. Omit to use the caller's personal workspace. */
+  workspaceId?: string | null;
+  /** Optional client key for retrying upload-session creation. */
+  clientIdempotencyKey?: string | null;
 },
     options?: RequestOptions,
-  ): Promise<components["schemas"]["PresignedUploadResponse"]> {
-    const response = (await this.core.request<components["schemas"]["WrappedPresignedUploadResponse"]>({
+  ): Promise<components["schemas"]["MultipartUploadSessionResponse"]> {
+    const response = (await this.core.request<components["schemas"]["WrappedMultipartUploadSessionResponse"]>({
       method: "POST",
       path: "/v1/memories/upload",
       pathParams: {},
-      query: { filename: params.filename, content_type: params.contentType, file_size: params.fileSize },
+      query: { filename: params.filename, content_type: params.contentType, file_size: params.fileSize, collection_id: params.collectionId, workspace_id: params.workspaceId, client_idempotency_key: params.clientIdempotencyKey },
+      routing: {
+        owner: "collection",
+        queryFields: ["collection_id","collectionId"],
+      },
       idempotent: false,
       signal: options?.signal,
-    })) as { results: components["schemas"]["PresignedUploadResponse"] };
+    })) as { results: components["schemas"]["MultipartUploadSessionResponse"] };
     return response.results;
   }
 
   /**
    * Delete an engram
    *
-   * Delete a specific engram with graph awareness. All chunks corresponding to the
-   * engram are deleted, and graph components (entities/relationships) are updated
-   * or deleted based on remaining chunk references from other engrams.
-   *
-   * This method now properly handles graph components and maintains graph integrity
-   * for search operations.
+   * Accept a specific engram for durable deletion.
    * @operationId memories.delete
    * @endpoint DELETE /v1/memories/{id}
    */
   async delete(
-    id: string,
+    params: {
+  /** Engram ID */
+  id: string;
+  /** Collection context for the deletion. */
+  collectionId: string;
+},
     options?: RequestOptions,
-  ): Promise<components["schemas"]["GenericBooleanResponse"]> {
-    const response = (await this.core.request<components["schemas"]["WrappedGenericBooleanResponse"]>({
+  ): Promise<components["schemas"]["DeletionOperationAcceptedResponse"]> {
+    const response = (await this.core.request<components["schemas"]["WrappedDeletionOperationAcceptedResponse"]>({
       method: "DELETE",
       path: "/v1/memories/{id}",
-      pathParams: { id: id },
-      query: undefined,
-      idempotent: false,
+      pathParams: { id: params.id },
+      query: { collection_id: params.collectionId },
+      headers: options?.idempotencyKey ? { "Idempotency-Key": options.idempotencyKey } : undefined,
+      routing: {
+        owner: "collection",
+        queryFields: ["collection_id","collectionId"],
+      },
+      idempotent: Boolean(options?.idempotencyKey),
       signal: options?.signal,
-    })) as { results: components["schemas"]["GenericBooleanResponse"] };
+    })) as { results: components["schemas"]["DeletionOperationAcceptedResponse"] };
     return response.results;
   }
 
   /**
    * Delete one or more engrams
    *
-   * Delete one or more engrams.
-   *
-   * This endpoint efficiently handles both single and batch deletions.
-   * When multiple IDs are provided, it uses optimized batch operations.
-   *
-   * Args:
-   *     ids: Either a single UUID or a list of UUIDs to delete
-   *
-   * Returns:
-   *     For single deletion: boolean success response
-   *     For batch deletion: detailed results with successful and failed deletions
+   * Accept one or more engrams for durable deletion.
    * @operationId memories.deleteMany
    * @endpoint POST /v1/memories/delete
    */
   async deleteMany(
     body: components["schemas"]["DeleteMemoriesRequest"],
     options?: RequestOptions,
-  ): Promise<unknown> {
-    return this.core.request<unknown>({
+  ): Promise<components["schemas"]["DeletionOperationAcceptedResponse"]> {
+    const response = (await this.core.request<components["schemas"]["WrappedDeletionOperationAcceptedResponse"]>({
       method: "POST",
       path: "/v1/memories/delete",
       pathParams: {},
       query: undefined,
       body: body,
-      idempotent: false,
+      headers: options?.idempotencyKey ? { "Idempotency-Key": options.idempotencyKey } : undefined,
+      routing: {
+        owner: "collection",
+        bodyFields: ["collection_id","collectionId"],
+      },
+      idempotent: Boolean(options?.idempotencyKey),
       signal: options?.signal,
-    });
+    })) as { results: components["schemas"]["DeletionOperationAcceptedResponse"] };
+    return response.results;
   }
 
   /**
-   * Delete a previously uploaded S3 file
+   * Delete a pending upload session
    *
-   * Delete a file from S3 that was uploaded via a presigned URL.
-   * Verifies the caller owns the file via S3 object metadata.
+   * Delete a pending upload session and its staged object.
    * @operationId memories.deleteUpload
    * @endpoint DELETE /v1/memories/upload
    */
   async deleteUpload(
     params: {
-  /** S3 key of the file to delete (returned by POST /memories/upload) */
-  s3Key: string;
+  /** Upload session ID returned by memories.createUpload. */
+  uploadSessionId: string;
 },
     options?: RequestOptions,
   ): Promise<components["schemas"]["GenericMessageResponse"]> {
@@ -197,10 +224,32 @@ export class MemoriesResource {
       method: "DELETE",
       path: "/v1/memories/upload",
       pathParams: {},
-      query: { s3_key: params.s3Key },
+      query: { upload_session_id: params.uploadSessionId },
       idempotent: true,
       signal: options?.signal,
     })) as { results: components["schemas"]["GenericMessageResponse"] };
+    return response.results;
+  }
+
+  /**
+   * Get memory deletion status
+   *
+   * Return the current state and per-target outcomes for a memory deletion operation.
+   * @operationId memories.getDeletion
+   * @endpoint GET /v1/memories/deletions/{operation_id}
+   */
+  async getDeletion(
+    operationId: string,
+    options?: RequestOptions,
+  ): Promise<components["schemas"]["DeletionOperationResponse"]> {
+    const response = (await this.core.request<components["schemas"]["WrappedDeletionOperationResponse"]>({
+      method: "GET",
+      path: "/v1/memories/deletions/{operation_id}",
+      pathParams: { operation_id: operationId },
+      query: undefined,
+      idempotent: true,
+      signal: options?.signal,
+    })) as { results: components["schemas"]["DeletionOperationResponse"] };
     return response.results;
   }
 
@@ -235,8 +284,6 @@ export class MemoriesResource {
   collectionIds?: Array<string> | null;
   /** JSON string for metadata filtering. Example: '{"metadata.source": {"$eq": "playground"}}' */
   metadataFilters?: string | null;
-  /** Read-your-writes assertion: the WAL-tail overlay path waits for at least this seq to be applied before serving (or returns 503 Unavailable on timeout). REQUIRES exactly one collection_ids entry — without a collection scope the request returns 422 (the per-WAL-shard scalar applied_wal_seq is meaningless across collections). When the served shard has not been migrated to wal_compaction_enabled, the field is accepted but the served path is the legacy overlay (the assertion has no effect — the response's applied_wal_seq will be 0). Pass back the value the matching upload response surfaced. */
-  minAppliedWalSeq?: number | null;
 } = {},
     options?: RequestOptions,
   ): Promise<components["schemas"]["PaginatedListedEngram"]> {
@@ -244,7 +291,7 @@ export class MemoriesResource {
       method: "GET",
       path: "/v1/memories",
       pathParams: {},
-      query: { ids: params.ids, cursor: params.cursor, limit: params.limit, chunks_limit: params.chunksLimit, owner_only: params.ownerOnly, collection_ids: params.collectionIds, metadata_filters: params.metadataFilters, min_applied_wal_seq: params.minAppliedWalSeq },
+      query: { ids: params.ids, cursor: params.cursor, limit: params.limit, chunks_limit: params.chunksLimit, owner_only: params.ownerOnly, collection_ids: params.collectionIds, metadata_filters: params.metadataFilters },
       idempotent: true,
       signal: options?.signal,
     });
@@ -283,6 +330,28 @@ export class MemoriesResource {
   }
 
   /**
+   * Resolve sources for an audited memory search
+   *
+   * Hydrate stored evidence refs after rechecking current access.
+   * @operationId memories.resolveSearchSources
+   * @endpoint GET /v1/memories/searches/{retrieval_id}/sources
+   */
+  async resolveSearchSources(
+    retrievalId: string,
+    options?: RequestOptions,
+  ): Promise<components["schemas"]["RetrievalAuditSourcesResponse"]> {
+    const response = (await this.core.request<components["schemas"]["WrappedRetrievalAuditSourcesResponse"]>({
+      method: "GET",
+      path: "/v1/memories/searches/{retrieval_id}/sources",
+      pathParams: { retrieval_id: retrievalId },
+      query: undefined,
+      idempotent: true,
+      signal: options?.signal,
+    })) as { results: components["schemas"]["RetrievalAuditSourcesResponse"] };
+    return response.results;
+  }
+
+  /**
    * Retrieve an engram
    *
    * Retrieves detailed information about a specific engram by its
@@ -317,7 +386,8 @@ export class MemoriesResource {
    * Perform a search query across your memories.
    *
    * **Standard mode** (collection_ids or readable-scope search): returns hierarchical MemoryRecall
-   * with semantics, episodes, procedures, and sources.
+   * with semantics, episodes, and procedures. Set ``include_sources``
+   * to include the raw source material grounding the retrieved memory.
    *
    * **Snapshot mode** (snapshot field): returns graph-search results with
    * {entities, relationships} from stateless in-memory traversal.
@@ -334,9 +404,40 @@ export class MemoriesResource {
       pathParams: {},
       query: undefined,
       body: body,
+      routing: {
+        owner: "collection",
+        bodyFields: ["collection_ids","collectionIds","filters.collection_id","filters.collection_ids","search_settings.filters.collection_id","search_settings.filters.collection_ids"],
+      },
       idempotent: false,
       signal: options?.signal,
     })) as { results: components["schemas"]["CompactMemoryRecallResponse"] | components["schemas"]["MemoryRecall"] | components["schemas"]["SnapshotSearchResult"] };
+    return response.results;
+  }
+
+  /**
+   * Create multipart upload part URL
+   *
+   * Create a presigned URL for uploading one part of an existing memory upload session.
+   * @operationId memories.signUploadPart
+   * @endpoint POST /v1/memories/upload/{upload_session_id}/parts/{part_number}
+   */
+  async signUploadPart(
+    params: {
+  uploadSessionId: string;
+  partNumber: number;
+  /** Base64-encoded SHA-256 checksum for this part. */
+  checksumSha256: string;
+},
+    options?: RequestOptions,
+  ): Promise<components["schemas"]["MultipartUploadPartResponse"]> {
+    const response = (await this.core.request<components["schemas"]["WrappedMultipartUploadPartResponse"]>({
+      method: "POST",
+      path: "/v1/memories/upload/{upload_session_id}/parts/{part_number}",
+      pathParams: { upload_session_id: params.uploadSessionId, part_number: params.partNumber },
+      query: { checksum_sha256: params.checksumSha256 },
+      idempotent: false,
+      signal: options?.signal,
+    })) as { results: components["schemas"]["MultipartUploadPartResponse"] };
     return response.results;
   }
 
@@ -364,7 +465,7 @@ export class MemoriesResource {
   /** The unique identifier of the memory */
   id: string;
   /** Collection context for copy-on-write. If provided and engram is shared, creates a copy before modification. */
-  collectionId?: string | null;
+  collectionId: string;
   body: components["schemas"]["UpdateMemoryRequest"];
 },
     options?: RequestOptions,
@@ -375,6 +476,10 @@ export class MemoriesResource {
       pathParams: { id: params.id },
       query: { collection_id: params.collectionId },
       body: params.body,
+      routing: {
+        owner: "collection",
+        queryFields: ["collection_id","collectionId"],
+      },
       idempotent: false,
       signal: options?.signal,
     })) as { results: components["schemas"]["Engram"] };
