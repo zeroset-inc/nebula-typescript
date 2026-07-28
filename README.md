@@ -35,7 +35,10 @@ const result = await client.memories.create({
   raw_text: "hello, world",
 });
 
-const results = await client.memories.search({ query: "hello" });
+const results = await client.memories.search({
+  query: "hello",
+  retrieval_operation_id: crypto.randomUUID(),
+});
 ```
 
 Resource methods (`client.memories.*`, `client.collections.*`,
