@@ -38,6 +38,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/collections/deletions/{operation_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get collection deletion status
+         * @description Return the current state and per-target outcomes for a collection deletion operation.
+         */
+        get: operations["collections.getDeletion"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/collections/name/{collection_name}": {
         parameters: {
             query?: never;
@@ -93,8 +113,9 @@ export interface paths {
          *
          *     This endpoint allows deletion of a collection identified by its
          *     UUID. The user must have appropriate permissions to delete the
-         *     collection. Deleting a collection removes all associations but does
-         *     not delete the engrams within it.
+         *     collection. The collection is marked as deleting immediately and
+         *     graph/S3 cleanup continues asynchronously. Deleting a collection
+         *     removes all associations but does not delete the engrams within it.
          */
         delete: operations["collections.delete"];
         options?: never;
@@ -120,6 +141,46 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/v1/connectors/oauth-apps": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List workspace connector OAuth app registrations
+         * @description Return the workspace-level OAuth app registrations used by Google and Microsoft 365 connectors for the requested collection's workspace. Client secrets are never returned.
+         */
+        get: operations["connectors.listOAuthApps"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/connectors/oauth-apps/{provider_family}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update a workspace connector OAuth app
+         * @description Update non-secret workspace OAuth app settings for a collection's workspace. Google apps can provide Pub/Sub settings to enable Gmail real-time sync. Client secrets are never returned.
+         */
+        patch: operations["connectors.updateOAuthApp"];
         trace?: never;
     };
     "/v1/connectors/providers": {
@@ -319,19 +380,29 @@ export interface paths {
         put?: never;
         /**
          * Delete one or more engrams
-         * @description Delete one or more engrams.
-         *
-         *     This endpoint efficiently handles both single and batch deletions.
-         *     When multiple IDs are provided, it uses optimized batch operations.
-         *
-         *     Args:
-         *         ids: Either a single UUID or a list of UUIDs to delete
-         *
-         *     Returns:
-         *         For single deletion: boolean success response
-         *         For batch deletion: detailed results with successful and failed deletions
+         * @description Accept one or more engrams for durable deletion.
          */
         post: operations["memories.deleteMany"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/memories/deletions/{operation_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get memory deletion status
+         * @description Return the current state and per-target outcomes for a memory deletion operation.
+         */
+        get: operations["memories.getDeletion"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -352,12 +423,33 @@ export interface paths {
          * @description Perform a search query across your memories.
          *
          *     **Standard mode** (collection_ids or readable-scope search): returns hierarchical MemoryRecall
-         *     with semantics, episodes, procedures, and sources.
+         *     with semantics, episodes, and procedures. Set ``include_sources``
+         *     to include the raw source material grounding the retrieved memory.
          *
          *     **Snapshot mode** (snapshot field): returns graph-search results with
          *     {entities, relationships} from stateless in-memory traversal.
          */
         post: operations["memories.search"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/memories/searches/{retrieval_id}/sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Resolve sources for an audited memory search
+         * @description Hydrate stored evidence refs after rechecking current access.
+         */
+        get: operations["memories.resolveSearchSources"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -374,33 +466,55 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Get presigned URL for large file upload
-         * @description Get a presigned URL for uploading large files directly to S3.
-         *
-         *     Use this for files larger than 5MB that cannot be sent inline as base64.
-         *     After uploading, reference the file in memory creation using S3FileReference.
-         *
-         *     Args:
-         *         filename: Original filename (e.g., "image.jpg")
-         *         content_type: MIME type (e.g., "image/jpeg", "application/pdf")
-         *         file_size: Expected file size in bytes (max 100MB)
-         *
-         *     Returns:
-         *         dict with:
-         *         - upload_url: Presigned URL for PUT request (expires in 1 hour)
-         *         - upload_headers: Headers that must be sent with the presigned PUT request
-         *         - s3_key: The S3 key to reference in memory creation
-         *         - bucket: S3 bucket name
-         *         - expires_in: Seconds until URL expires
-         *         - max_size: Maximum allowed file size
+         * Create multipart upload session
+         * @description Create a workspace-scoped multipart upload session.
          */
         post: operations["memories.createUpload"];
         /**
-         * Delete a previously uploaded S3 file
-         * @description Delete a file from S3 that was uploaded via a presigned URL.
-         *     Verifies the caller owns the file via S3 object metadata.
+         * Delete a pending upload session
+         * @description Delete a pending upload session and its staged object.
          */
         delete: operations["memories.deleteUpload"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/memories/upload/{upload_session_id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Complete multipart upload session
+         * @description Finalize an upload session after every multipart upload part has been uploaded.
+         */
+        post: operations["memories.completeUpload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/memories/upload/{upload_session_id}/parts/{part_number}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create multipart upload part URL
+         * @description Create a presigned URL for uploading one part of an existing memory upload session.
+         */
+        post: operations["memories.signUploadPart"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -458,12 +572,7 @@ export interface paths {
         post?: never;
         /**
          * Delete an engram
-         * @description Delete a specific engram with graph awareness. All chunks corresponding to the
-         *     engram are deleted, and graph components (entities/relationships) are updated
-         *     or deleted based on remaining chunk references from other engrams.
-         *
-         *     This method now properly handles graph components and maintains graph integrity
-         *     for search operations.
+         * @description Accept a specific engram for durable deletion.
          */
         delete: operations["memories.delete"];
         options?: never;
@@ -509,6 +618,71 @@ export interface paths {
          *     - Content will be processed and added to the engram
          */
         post: operations["memories.append"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/workspaces/{workspace_id}/encryption": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get workspace managed encryption status
+         * @description Current managed-encryption status for the workspace.
+         */
+        get: operations["workspaces.getManagedEncryption"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/workspaces/{workspace_id}/encryption/disable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Disable workspace managed encryption for new writes
+         * @description Stop encrypting new writes under the workspace key. The key stays
+         *     enabled so existing objects remain readable; scheduling key deletion
+         *     is a separate, gated operation.
+         */
+        post: operations["workspaces.disableManagedEncryption"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/workspaces/{workspace_id}/encryption/enable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Enable workspace managed encryption
+         * @description Provision a dedicated Nebula-managed KMS key for the workspace and
+         *     encrypt new graph-plane object writes under it. Forward-only:
+         *     existing objects are re-encrypted lazily as data is rewritten, not
+         *     immediately.
+         */
+        post: operations["workspaces.enableManagedEncryption"];
         delete?: never;
         options?: never;
         head?: never;
@@ -675,8 +849,6 @@ export interface components {
              * @default 0
              */
             activation_score?: number;
-            /** Belief Kind */
-            belief_kind?: string | null;
             /**
              * Confidence
              * @default 0
@@ -701,6 +873,8 @@ export interface components {
              * @default false
              */
             is_negated?: boolean;
+            /** Memory Class */
+            memory_class?: string | null;
             /** Metadata */
             metadata?: {
                 [key: string]: unknown;
@@ -728,8 +902,6 @@ export interface components {
              * @default 0
              */
             activation_score?: number;
-            /** Belief Kind */
-            belief_kind?: string | null;
             /**
              * Category
              * @default fact
@@ -762,6 +934,8 @@ export interface components {
             id: string;
             /** Is Current */
             is_current?: boolean | null;
+            /** Memory Class */
+            memory_class?: string | null;
             /** Predicate */
             predicate: string;
             /** Reasoning */
@@ -904,7 +1078,7 @@ export interface components {
              * Content
              * @description Message content. Use a string for text-only messages or a list of content parts for multimodal content.
              */
-            content: string | (components["schemas"]["TextContentRequest"] | components["schemas"]["FileContentRequest"] | components["schemas"]["S3FileReferenceRequest"])[];
+            content: string | (components["schemas"]["TextContentRequest"] | components["schemas"]["FileContentRequest"] | components["schemas"]["FileReferenceRequest"])[];
             /**
              * Metadata
              * @description Optional message-level metadata
@@ -950,11 +1124,6 @@ export interface components {
             /** @description Optional ingestion configuration override. */
             ingestion_config?: components["schemas"]["IngestionConfig"] | null;
             /**
-             * @description Ingestion mode for document content.
-             * @default custom
-             */
-            ingestion_mode?: components["schemas"]["IngestionMode"];
-            /**
              * Messages
              * @description Messages to append for conversation memories. Each message has content, role, and optional metadata.
              */
@@ -997,24 +1166,34 @@ export interface components {
             /** Message Id */
             message_id: string;
         };
-        /** BatchDeleteResponse */
-        BatchDeleteResponse: {
-            /** Message */
-            message: string;
-            results: components["schemas"]["BatchDeleteResult"];
-        };
-        /** BatchDeleteResult */
-        BatchDeleteResult: {
-            /** Failed */
-            failed: {
-                [key: string]: unknown;
-            }[];
-            /** Successful */
-            successful: string[];
-            /** Summary */
-            summary: {
-                [key: string]: unknown;
-            };
+        /**
+         * AvailableRetrievalAuditSource
+         * @description Hydrated source that remains available to the authorized caller.
+         */
+        AvailableRetrievalAuditSource: {
+            /** Activation Score */
+            activation_score: number;
+            /** Display Name */
+            display_name?: string | null;
+            evidence_ref: components["schemas"]["EvidenceRef"];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Speaker */
+            speaker?: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            status: "available";
+            /** Supporting Fact Ids */
+            supporting_fact_ids: string[];
+            /** Text */
+            text: string;
+            /** Timestamp */
+            timestamp?: string | null;
         };
         /**
          * BootstrapRecallRequest
@@ -1114,6 +1293,8 @@ export interface components {
             id: string;
             /** Is Forked */
             is_forked?: boolean | null;
+            /** Lattice Node Id */
+            lattice_node_id?: string | null;
             /** Marketplace Metadata */
             marketplace_metadata?: {
                 [key: string]: unknown;
@@ -1174,11 +1355,19 @@ export interface components {
             }[];
             /** Query */
             query: string;
+            /**
+             * Retrieval Id
+             * @description Stable identifier for retrieval audit and source resolution.
+             */
+            retrieval_id?: string | null;
             /** Semantic */
             semantic?: {
                 [key: string]: unknown;
             }[];
-            /** Sources */
+            /**
+             * Sources
+             * @description Present only when include_sources is true; an empty list means sources were requested but none were found.
+             */
             sources?: {
                 [key: string]: unknown;
             }[];
@@ -1187,6 +1376,42 @@ export interface components {
              * @default 0
              */
             token_count?: number;
+        };
+        /** CompleteMultipartUploadRequest */
+        CompleteMultipartUploadRequest: {
+            /**
+             * Expected Sha256
+             * @description Full-object SHA-256 hex digest.
+             */
+            expected_sha256: string;
+            /** Parts */
+            parts: components["schemas"]["CompletedMultipartUploadPart"][];
+        };
+        /** CompleteMultipartUploadResponse */
+        CompleteMultipartUploadResponse: {
+            /** Byte Size */
+            byte_size: number;
+            /** Content Type */
+            content_type: string;
+            /** Raw Sha256 */
+            raw_sha256: string;
+            /**
+             * Upload Session Id
+             * Format: uuid
+             */
+            upload_session_id: string;
+        };
+        /** CompletedMultipartUploadPart */
+        CompletedMultipartUploadPart: {
+            /**
+             * Checksum Sha256
+             * @description Base64-encoded SHA-256 checksum returned for the part.
+             */
+            checksum_sha256: string;
+            /** Etag */
+            etag: string;
+            /** Part Number */
+            part_number: number;
         };
         /** ConnectRequest */
         ConnectRequest: {
@@ -1199,6 +1424,12 @@ export interface components {
             config?: {
                 [key: string]: unknown;
             } | null;
+            /** Oauth Client Id */
+            oauth_client_id?: string | null;
+            /** Oauth Client Mode */
+            oauth_client_mode?: "workspace" | null;
+            /** Oauth Client Secret */
+            oauth_client_secret?: string | null;
         };
         /** ConnectorConnectResponse */
         ConnectorConnectResponse: {
@@ -1233,6 +1464,11 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /**
+             * Is Syncing
+             * @default false
+             */
+            is_syncing?: boolean;
             /** Items Synced */
             items_synced?: number | null;
             /** Last Error */
@@ -1264,6 +1500,11 @@ export interface components {
              * Format: uuid
              */
             user_id: string;
+            /**
+             * Uses Workspace Oauth App
+             * @default false
+             */
+            uses_workspace_oauth_app?: boolean;
         };
         /** ConnectorDisconnectResponse */
         ConnectorDisconnectResponse: {
@@ -1278,6 +1519,47 @@ export interface components {
             message: string;
             /** Retryable */
             retryable: boolean;
+        };
+        /** ConnectorOAuthAppResponse */
+        ConnectorOAuthAppResponse: {
+            /**
+             * Can Manage
+             * @default false
+             */
+            can_manage?: boolean;
+            /** Configured */
+            configured: boolean;
+            /** Gmail Pubsub Audience */
+            gmail_pubsub_audience?: string | null;
+            /** Gmail Pubsub Push Service Account */
+            gmail_pubsub_push_service_account?: string | null;
+            /** Gmail Pubsub Topic */
+            gmail_pubsub_topic?: string | null;
+            /** Gmail Webhook Url */
+            gmail_webhook_url?: string | null;
+            /** Oauth Client Id */
+            oauth_client_id?: string | null;
+            /**
+             * Provider Family
+             * @enum {string}
+             */
+            provider_family: "google" | "m365";
+            /** Updated At */
+            updated_at?: string | null;
+        };
+        /** ConnectorOAuthAppUpdateRequest */
+        ConnectorOAuthAppUpdateRequest: {
+            /**
+             * Collection Id
+             * Format: uuid
+             */
+            collection_id: string;
+            /** Gmail Pubsub Audience */
+            gmail_pubsub_audience?: string | null;
+            /** Gmail Pubsub Push Service Account */
+            gmail_pubsub_push_service_account?: string | null;
+            /** Gmail Pubsub Topic */
+            gmail_pubsub_topic?: string | null;
         };
         /** ConnectorSyncResponse */
         ConnectorSyncResponse: {
@@ -1320,7 +1602,7 @@ export interface components {
              * Content
              * @description Message content. Use a string for text-only messages or a list of content parts for multimodal content.
              */
-            content: string | (components["schemas"]["TextContentRequest"] | components["schemas"]["FileContentRequest"] | components["schemas"]["S3FileReferenceRequest"])[];
+            content: string | (components["schemas"]["TextContentRequest"] | components["schemas"]["FileContentRequest"] | components["schemas"]["FileReferenceRequest"])[];
             /**
              * Metadata
              * @description Optional message-level metadata
@@ -1344,6 +1626,11 @@ export interface components {
         CreateCollectionRequest: {
             /** Description */
             description?: string | null;
+            /**
+             * Lattice Node Id
+             * @description Team workspace lattice node that owns this collection. Omit to use the workspace's General node. Personal collections cannot set this field.
+             */
+            lattice_node_id?: string | null;
             /** Name */
             name: string;
             /**
@@ -1384,6 +1671,11 @@ export interface components {
              */
             chunks?: string[] | null;
             /**
+             * Client Idempotency Key
+             * @description Optional client-supplied key for retrying the same create request without creating duplicate ingestion work.
+             */
+            client_idempotency_key?: string | null;
+            /**
              * Collection Id
              * @description Collection UUID (mutually exclusive with snapshot)
              */
@@ -1392,7 +1684,7 @@ export interface components {
              * Content Parts
              * @description Multimodal content parts (text, images, audio, documents) for document kind.
              */
-            content_parts?: (components["schemas"]["TextContentRequest"] | components["schemas"]["FileContentRequest"] | components["schemas"]["S3FileReferenceRequest"])[] | null;
+            content_parts?: (components["schemas"]["TextContentRequest"] | components["schemas"]["FileContentRequest"] | components["schemas"]["FileReferenceRequest"])[] | null;
             /**
              * Contents
              * @description Batch content strings for snapshot mode
@@ -1400,11 +1692,6 @@ export interface components {
             contents?: string[] | null;
             /** @description Custom ingestion config for documents */
             ingestion_config?: components["schemas"]["IngestionConfig"] | null;
-            /**
-             * @description Ingestion mode for documents
-             * @default fast
-             */
-            ingestion_mode?: components["schemas"]["IngestionMode"] | null;
             /**
              * @description Engram discriminator: ``document`` or ``conversation``. When omitted, ``conversation`` is inferred if ``messages`` is present; otherwise defaults to ``document``.
              * @default document
@@ -1486,7 +1773,117 @@ export interface components {
             trace_id?: string | null;
         };
         /** DeleteMemoriesRequest */
-        DeleteMemoriesRequest: string | string[];
+        DeleteMemoriesRequest: {
+            /**
+             * Collection Id
+             * Format: uuid
+             * @description Collection context for the memory deletion.
+             */
+            collection_id: string;
+            /**
+             * Ids
+             * @description Single engram ID or list of engram IDs to delete.
+             */
+            ids: string | string[];
+        };
+        /** DeletionOperationAcceptedResponse */
+        DeletionOperationAcceptedResponse: {
+            /**
+             * Operation Id
+             * Format: uuid
+             */
+            operation_id: string;
+            /**
+             * Status
+             * @default accepted
+             * @constant
+             */
+            status?: "accepted";
+            /** Status Url */
+            status_url: string;
+        };
+        /** DeletionOperationResponse */
+        DeletionOperationResponse: {
+            /**
+             * Accepted At
+             * Format: date-time
+             */
+            accepted_at: string;
+            /** Completed At */
+            completed_at?: string | null;
+            /** Error */
+            error?: string | null;
+            /** Logically Deleted At */
+            logically_deleted_at?: string | null;
+            /**
+             * Operation Id
+             * Format: uuid
+             */
+            operation_id: string;
+            /**
+             * Operation Kind
+             * @enum {string}
+             */
+            operation_kind: "engram" | "collection";
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "accepted" | "tombstoning" | "barriering" | "logically_deleted" | "cancelling" | "cleaning" | "succeeded" | "failed";
+            /** Targets */
+            targets?: components["schemas"]["DeletionTargetResponse"][];
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** DeletionTargetCollectionResponse */
+        DeletionTargetCollectionResponse: {
+            /** Barrier Operation Id */
+            barrier_operation_id?: string | null;
+            /**
+             * Collection Id
+             * Format: uuid
+             */
+            collection_id: string;
+            /** Committed Frontier */
+            committed_frontier?: {
+                [key: string]: unknown;
+            } | null;
+            /** Error */
+            error?: string | null;
+            /** Generation */
+            generation: number;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "captured" | "barriering" | "committed" | "failed";
+        };
+        /** DeletionTargetResponse */
+        DeletionTargetResponse: {
+            /** Collections */
+            collections?: components["schemas"]["DeletionTargetCollectionResponse"][];
+            /** Error */
+            error?: string | null;
+            /** Generation */
+            generation?: number | null;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "accepted" | "tombstoning" | "barriering" | "logically_deleted" | "cancelling" | "cleaning" | "succeeded" | "failed";
+            /** Target Id */
+            target_id?: string | null;
+            /** Target Key */
+            target_key: string;
+            /**
+             * Target Kind
+             * @enum {string}
+             */
+            target_kind: "engram" | "collection" | "chunk";
+        };
         /**
          * DocumentFields
          * @description Document-specific typed fields.
@@ -1520,10 +1917,10 @@ export interface components {
             dim?: number;
             /**
              * Encoding
-             * @default npy-base64
+             * @default raw-f32-base64
              * @constant
              */
-            encoding?: "npy-base64";
+            encoding?: "raw-f32-base64";
             /**
              * Mask B64
              * @default
@@ -1582,17 +1979,22 @@ export interface components {
             /** @default pending */
             extraction_status?: components["schemas"]["GraphExtractionStatus"];
             /**
+             * Generation
+             * @default 1
+             */
+            generation?: number;
+            graph_extraction_progress?: components["schemas"]["GraphExtractionProgress"] | null;
+            /**
              * Id
              * Format: uuid
              */
             id?: string;
             /** Ingestion Attempt Number */
             ingestion_attempt_number?: number | null;
+            ingestion_failure?: components["schemas"]["IngestionFailure"] | null;
             /** @default pending */
             ingestion_status?: components["schemas"]["IngestionStatus"];
             kind: components["schemas"]["EngramKind"];
-            /** Merkle Root */
-            merkle_root?: string | null;
             /** Metadata */
             metadata?: {
                 [key: string]: unknown;
@@ -1779,10 +2181,22 @@ export interface components {
              */
             type: "audio" | "document" | "file" | "image";
         };
-        /** GenericBooleanResponse */
-        GenericBooleanResponse: {
-            /** Success */
-            success: boolean;
+        /**
+         * FileReferenceRequest
+         * @description Reference to a file uploaded through an upload session.
+         */
+        FileReferenceRequest: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "file_ref";
+            /**
+             * Upload Session Id
+             * Format: uuid
+             * @description Upload session returned by memories.createUpload.
+             */
+            upload_session_id: string;
         };
         /** GenericMessageResponse */
         GenericMessageResponse: {
@@ -1794,11 +2208,64 @@ export interface components {
             message: string;
         };
         /**
+         * GraphExtractionProgress
+         * @description Per-engram graph extraction progress for the latest extraction manifest.
+         */
+        GraphExtractionProgress: {
+            /**
+             * Batch Submitted Groups
+             * @default 0
+             */
+            batch_submitted_groups?: number;
+            /**
+             * Completed Groups
+             * @default 0
+             */
+            completed_groups?: number;
+            /**
+             * Failed Groups
+             * @default 0
+             */
+            failed_groups?: number;
+            /**
+             * In Flight Groups
+             * @default 0
+             */
+            in_flight_groups?: number;
+            /** Last Updated At */
+            last_updated_at?: string | null;
+            /**
+             * Pending Groups
+             * @default 0
+             */
+            pending_groups?: number;
+            /** @default queued */
+            phase?: components["schemas"]["GraphExtractionProgressPhase"];
+            /**
+             * Progress
+             * @default 0
+             */
+            progress?: number;
+            /** @default pending */
+            status?: components["schemas"]["GraphExtractionStatus"];
+            /**
+             * Total Groups
+             * @default 0
+             */
+            total_groups?: number;
+        };
+        /**
+         * GraphExtractionProgressPhase
+         * @description Current work phase for per-engram graph extraction progress.
+         * @enum {string}
+         */
+        GraphExtractionProgressPhase: "queued" | "extracting" | "writing" | "completed" | "failed";
+        /**
          * GraphExtractionStatus
          * @description Status of graph creation per document.
          * @enum {string}
          */
-        GraphExtractionStatus: "pending" | "processing" | "success" | "failed";
+        GraphExtractionStatus: "pending" | "processing" | "empty" | "success" | "failed";
         /**
          * GraphPayload
          * @description A complete graph payload or a context subgraph payload.
@@ -1849,6 +2316,7 @@ export interface components {
             page_number?: number | null;
             /** Section Path */
             section_path?: string[] | null;
+            source?: components["schemas"]["SourceProvenance"] | null;
             /** Source Role */
             source_role?: string | null;
             /** Speaker */
@@ -1987,10 +2455,36 @@ export interface components {
             vlm_ocr_one_page_per_chunk?: boolean;
         };
         /**
-         * IngestionMode
+         * IngestionFailure
+         * @description Sanitized public failure details for a failed ingestion attempt.
+         */
+        IngestionFailure: {
+            code: components["schemas"]["IngestionFailureCode"];
+            /** Message */
+            message: string;
+            /**
+             * Occurred At
+             * Format: date-time
+             */
+            occurred_at: string;
+            /** Retryable */
+            retryable: boolean;
+            stage: components["schemas"]["IngestionFailureStage"];
+            /** Workflow Run Id */
+            workflow_run_id?: string | null;
+        };
+        /**
+         * IngestionFailureCode
+         * @description Stable, machine-readable reasons why ingestion stopped.
          * @enum {string}
          */
-        IngestionMode: "hi-res" | "ocr" | "fast" | "custom";
+        IngestionFailureCode: "ingestion_failed" | "orchestration_unavailable" | "orchestration_start_timeout";
+        /**
+         * IngestionFailureStage
+         * @description The ingestion boundary at which processing stopped.
+         * @enum {string}
+         */
+        IngestionFailureStage: "orchestration" | "queued" | "parsing" | "extracting" | "chunking" | "embedding" | "augmenting" | "storing";
         /**
          * IngestionResponse
          * @example {
@@ -2041,17 +2535,22 @@ export interface components {
             /** @default pending */
             extraction_status?: components["schemas"]["GraphExtractionStatus"];
             /**
+             * Generation
+             * @default 1
+             */
+            generation?: number;
+            graph_extraction_progress?: components["schemas"]["GraphExtractionProgress"] | null;
+            /**
              * Id
              * Format: uuid
              */
             id?: string;
             /** Ingestion Attempt Number */
             ingestion_attempt_number?: number | null;
+            ingestion_failure?: components["schemas"]["IngestionFailure"] | null;
             /** @default pending */
             ingestion_status?: components["schemas"]["IngestionStatus"];
             kind: components["schemas"]["EngramKind"];
-            /** Merkle Root */
-            merkle_root?: string | null;
             /** Metadata */
             metadata?: {
                 [key: string]: unknown;
@@ -2085,12 +2584,6 @@ export interface components {
          * @description Accepted-response envelope for async memory ingestion.
          */
         MemoryCreateAcceptedResponse: {
-            /**
-             * Applied Wal Seq
-             * @description WAL committed sequence number from this placeholder write, for read-your-writes assertions on the next collection-scoped list call. A non-zero value indicates the request appended a WAL entry; pass it back as `min_applied_wal_seq` on GET /v1/memories to wait for the entry's visibility before serving. Zero on idempotent observe-existing replays and on multi-shard collections (per-shard scalars are not comparable across shards) — clients should treat zero as 'no assertion to make.' Single-shard collections only.
-             * @default 0
-             */
-            applied_wal_seq?: number;
             /** Engram Id */
             engram_id?: string | null;
             /**
@@ -2142,6 +2635,11 @@ export interface components {
             procedural?: components["schemas"]["ActivatedProcedure"][];
             /** Query */
             query: string;
+            /**
+             * Retrieval Id
+             * @description Stable identifier for retrieval audit and follow-up source resolution.
+             */
+            retrieval_id?: string | null;
             /** Search Timing Ms */
             search_timing_ms?: {
                 [key: string]: number;
@@ -2179,6 +2677,12 @@ export interface components {
                 [key: string]: unknown;
             } | null;
             /**
+             * Include Sources
+             * @description Include the raw source material that grounds the retrieved memory. Sources are omitted by default to keep responses compact.
+             * @default false
+             */
+            include_sources?: boolean;
+            /**
              * Nql
              * @description Pre-written NQL script. Executes directly without planner compilation. Mutually exclusive with ``query``.
              */
@@ -2188,12 +2692,23 @@ export interface components {
              * @description Natural-language search query. Mutually exclusive with ``nql``.
              */
             query?: string | null;
+            /**
+             * Retrieval Operation Id
+             * Format: uuid
+             * @description Stable identifier for one logical retrieval. Reuse it when retrying the same request so retrieval evidence remains idempotent.
+             */
+            retrieval_operation_id?: string;
             /** @description Advanced search settings. */
             search_settings?: components["schemas"]["SearchSettings"] | null;
             /** @description Device-memory snapshot for stateless search. */
             snapshot?: components["schemas"]["SnapshotEnvelope-Input"] | null;
             /** @description Device-memory snapshot reference for stateless search. */
             snapshot_ref?: components["schemas"]["SnapshotObjectReference"] | null;
+            /**
+             * Workspace Id
+             * @description Workspace that owns this search audit and request log. When set, the search is constrained to collections in that workspace. Unspecified searches are attributed to the caller's personal workspace.
+             */
+            workspace_id?: string | null;
         };
         /**
          * Message
@@ -2239,6 +2754,37 @@ export interface components {
          * @enum {string}
          */
         MessageType: "system" | "user" | "assistant" | "function" | "tool";
+        /** MultipartUploadPartResponse */
+        MultipartUploadPartResponse: {
+            /** Expires In */
+            expires_in: number;
+            /** Part Number */
+            part_number: number;
+            /** Upload Headers */
+            upload_headers: {
+                [key: string]: string;
+            };
+            /** Upload Url */
+            upload_url: string;
+        };
+        /** MultipartUploadSessionResponse */
+        MultipartUploadSessionResponse: {
+            /** Expires In */
+            expires_in: number;
+            /** Max Size */
+            max_size: number;
+            /**
+             * Part Size
+             * @description Recommended upload part size in bytes.
+             */
+            part_size: number;
+            /**
+             * Upload Session Id
+             * Format: uuid
+             * @description Upload session ID to reference in memory creation.
+             */
+            upload_session_id: string;
+        };
         /**
          * PaginatedCollectionResponse
          * @description Cursor-paginated list of CollectionResponse entries. The wire envelope is ``{data, next_cursor, has_more}``.
@@ -2255,11 +2801,6 @@ export interface components {
          * @description Cursor-paginated list of ListedEngram entries. The wire envelope is ``{data, next_cursor, has_more}``.
          */
         PaginatedListedEngram: {
-            /**
-             * @description Highest WAL committed sequence number reflected in this response. Non-zero only when the request was served via the WAL-tail fast path. Pair with ``min_applied_wal_seq`` on the request for read-your-writes assertions.
-             * @default 0
-             */
-            applied_wal_seq?: number;
             data: components["schemas"]["ListedEngram"][];
             /** @description Whether another page is available after this one. */
             has_more: boolean;
@@ -2307,25 +2848,6 @@ export interface components {
              * @description Anchor: the user's most recent trace id. The handler resolves this trace's state_before automatically.
              */
             trace_id?: string | null;
-        };
-        /** PresignedUploadResponse */
-        PresignedUploadResponse: {
-            /** Bucket */
-            bucket: string;
-            /** Download Url */
-            download_url: string;
-            /** Expires In */
-            expires_in: number;
-            /** Max Size */
-            max_size: number;
-            /** S3 Key */
-            s3_key: string;
-            /** Upload Headers */
-            upload_headers: {
-                [key: string]: string;
-            };
-            /** Upload Url */
-            upload_url: string;
         };
         /**
          * RelationshipRecord
@@ -2424,41 +2946,49 @@ export interface components {
             trace_id?: string | null;
         };
         /**
-         * S3FileReferenceRequest
-         * @description Reference to a file uploaded to S3 (for large files).
+         * RetrievalAuditSourceGroup
+         * @description Sources supporting one result returned by the original search.
          */
-        S3FileReferenceRequest: {
+        RetrievalAuditSourceGroup: {
+            /** Activation Score */
+            activation_score: number;
             /**
-             * Bucket
-             * @description S3 bucket (uses default if not specified)
+             * Memory Id
+             * Format: uuid
              */
-            bucket?: string | null;
+            memory_id: string;
             /**
-             * Filename
-             * @description Original filename
-             */
-            filename?: string | null;
-            /**
-             * Media Type
-             * @description MIME type
-             * @default application/octet-stream
-             */
-            media_type?: string;
-            /**
-             * S3 Key
-             * @description S3 object key
-             */
-            s3_key: string;
-            /**
-             * Size Bytes
-             * @description File size in bytes
-             */
-            size_bytes?: number | null;
-            /**
-             * @description discriminator enum property added by openapi-typescript
+             * Memory Kind
              * @enum {string}
              */
-            type: "s3_ref";
+            memory_kind: "semantic" | "episodic" | "procedural";
+            /** Rank */
+            rank: number;
+            /** Sources */
+            sources: (components["schemas"]["AvailableRetrievalAuditSource"] | components["schemas"]["UnavailableRetrievalAuditSource"])[];
+            /**
+             * Truncated
+             * @default false
+             */
+            truncated?: boolean;
+        };
+        /**
+         * RetrievalAuditSourcesResponse
+         * @description Authorization-checked sources for a previously audited retrieval.
+         */
+        RetrievalAuditSourcesResponse: {
+            /** Groups */
+            groups: components["schemas"]["RetrievalAuditSourceGroup"][];
+            /**
+             * Retrieval Id
+             * Format: uuid
+             */
+            retrieval_id: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "complete" | "partial";
         };
         /**
          * SearchEffort
@@ -2558,9 +3088,10 @@ export interface components {
             created_at?: string;
             /**
              * Format Version
-             * @default 3
+             * @default 4
+             * @constant
              */
-            format_version?: number;
+            format_version?: 4;
             /**
              * Generation
              * @default 0
@@ -2587,9 +3118,10 @@ export interface components {
             created_at?: string;
             /**
              * Format Version
-             * @default 3
+             * @default 4
+             * @constant
              */
-            format_version?: number;
+            format_version?: 4;
             /**
              * Generation
              * @default 0
@@ -2718,6 +3250,49 @@ export interface components {
             /** Relationships */
             relationships?: components["schemas"]["SnapshotSearchRelationshipResponse"][];
         };
+        /** SourceProvenance */
+        SourceProvenance: {
+            /**
+             * Name
+             * @description Human-readable source title, such as a filename or subject.
+             */
+            name?: string | null;
+            /**
+             * Provider
+             * @description Connector/provider identifier, such as 'gmail' or 'google_drive'.
+             */
+            provider?: string | null;
+            /**
+             * Provider Object Id
+             * @description Provider-native id for the source item.
+             */
+            provider_object_id?: string | null;
+            /**
+             * Provider Parent Id
+             * @description Provider-native id of the parent source item.
+             */
+            provider_parent_id?: string | null;
+            /**
+             * Provider Thread Id
+             * @description Provider-native id for the thread/conversation.
+             */
+            provider_thread_id?: string | null;
+            /**
+             * Type
+             * @description Human-scale source class, such as 'file', 'email', or 'chat'.
+             */
+            type?: string | null;
+            /**
+             * Uri
+             * @description Stable non-URL source identifier.
+             */
+            uri?: string | null;
+            /**
+             * Url
+             * @description Provider URL for the source object when available.
+             */
+            url?: string | null;
+        };
         /**
          * StorageTargetCreateRequest
          * @description Hosted SaaS storage target registration. Use AWS S3 and omit custom endpoint configuration.
@@ -2809,6 +3384,18 @@ export interface components {
              */
             type: "text";
         };
+        /**
+         * UnavailableRetrievalAuditSource
+         * @description Retained evidence reference whose source can no longer be resolved.
+         */
+        UnavailableRetrievalAuditSource: {
+            evidence_ref: components["schemas"]["EvidenceRef"];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            status: "unavailable";
+        };
         /** UpdateCollectionRequest */
         UpdateCollectionRequest: {
             /** Access Tier */
@@ -2878,6 +3465,50 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        /** WorkspaceEncryptionResponse */
+        WorkspaceEncryptionResponse: {
+            /** Active Propagation Id */
+            active_propagation_id?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Kms Key Id */
+            kms_key_id?: string | null;
+            /** Last Validated At */
+            last_validated_at?: string | null;
+            /** Propagation Completed Items */
+            propagation_completed_items?: number | null;
+            /** Propagation Failed Items */
+            propagation_failed_items?: number | null;
+            /** Propagation Last Error */
+            propagation_last_error?: string | null;
+            /** Propagation Operation */
+            propagation_operation?: string | null;
+            /** Propagation Status */
+            propagation_status?: string | null;
+            /** Propagation Total Items */
+            propagation_total_items?: number | null;
+            status: components["schemas"]["WorkspaceEncryptionStatus"];
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Validation Error */
+            validation_error?: string | null;
+            /**
+             * Workspace Id
+             * Format: uuid
+             */
+            workspace_id: string;
+        };
+        /**
+         * WorkspaceEncryptionStatus
+         * @enum {string}
+         */
+        WorkspaceEncryptionStatus: "pending" | "provisioning" | "activating" | "activation_failed" | "active" | "disabling" | "disable_failed" | "validation_failed" | "disabled";
         /** NebulaResults[AppendMemoryResponse] */
         WrappedAppendMemoryResponse: {
             results: components["schemas"]["AppendMemoryResponse"];
@@ -2889,6 +3520,10 @@ export interface components {
         /** NebulaResults[CompactMemoryRecallResponse] */
         WrappedCompactMemoryRecallResponse: {
             results: components["schemas"]["CompactMemoryRecallResponse"];
+        };
+        /** NebulaResults[CompleteMultipartUploadResponse] */
+        WrappedCompleteMultipartUploadResponse: {
+            results: components["schemas"]["CompleteMultipartUploadResponse"];
         };
         /** NebulaResults[ConnectorConnectResponse] */
         WrappedConnectorConnectResponse: {
@@ -2902,17 +3537,25 @@ export interface components {
         WrappedConnectorDisconnectResponse: {
             results: components["schemas"]["ConnectorDisconnectResponse"];
         };
+        /** NebulaResults[ConnectorOAuthAppResponse] */
+        WrappedConnectorOAuthAppResponse: {
+            results: components["schemas"]["ConnectorOAuthAppResponse"];
+        };
         /** NebulaResults[ConnectorSyncResponse] */
         WrappedConnectorSyncResponse: {
             results: components["schemas"]["ConnectorSyncResponse"];
         };
+        /** NebulaResults[DeletionOperationAcceptedResponse] */
+        WrappedDeletionOperationAcceptedResponse: {
+            results: components["schemas"]["DeletionOperationAcceptedResponse"];
+        };
+        /** NebulaResults[DeletionOperationResponse] */
+        WrappedDeletionOperationResponse: {
+            results: components["schemas"]["DeletionOperationResponse"];
+        };
         /** NebulaResults[Engram] */
         WrappedEngram: {
             results: components["schemas"]["Engram"];
-        };
-        /** NebulaResults[GenericBooleanResponse] */
-        WrappedGenericBooleanResponse: {
-            results: components["schemas"]["GenericBooleanResponse"];
         };
         /** NebulaResults[GenericMessageResponse] */
         WrappedGenericMessageResponse: {
@@ -2926,6 +3569,11 @@ export interface components {
         WrappedListOfConnectorConnectionResponse: {
             /** Results */
             results: components["schemas"]["ConnectorConnectionResponse"][];
+        };
+        /** NebulaResults[list[ConnectorOAuthAppResponse]] */
+        WrappedListOfConnectorOAuthAppResponse: {
+            /** Results */
+            results: components["schemas"]["ConnectorOAuthAppResponse"][];
         };
         /** NebulaResults[list[StorageTargetResponse]] */
         WrappedListOfStorageTargetResponse: {
@@ -2945,9 +3593,17 @@ export interface components {
         WrappedMemoryRecall: {
             results: components["schemas"]["MemoryRecall"];
         };
-        /** NebulaResults[PresignedUploadResponse] */
-        WrappedPresignedUploadResponse: {
-            results: components["schemas"]["PresignedUploadResponse"];
+        /** NebulaResults[MultipartUploadPartResponse] */
+        WrappedMultipartUploadPartResponse: {
+            results: components["schemas"]["MultipartUploadPartResponse"];
+        };
+        /** NebulaResults[MultipartUploadSessionResponse] */
+        WrappedMultipartUploadSessionResponse: {
+            results: components["schemas"]["MultipartUploadSessionResponse"];
+        };
+        /** NebulaResults[RetrievalAuditSourcesResponse] */
+        WrappedRetrievalAuditSourcesResponse: {
+            results: components["schemas"]["RetrievalAuditSourcesResponse"];
         };
         /** NebulaResults[Union[SnapshotEnvelope, SnapshotObjectReference]] */
         WrappedSnapshotEnvelopeOrSnapshotObjectReference: {
@@ -2969,6 +3625,10 @@ export interface components {
         /** NebulaResults[StorageTargetResponse] */
         WrappedStorageTargetResponse: {
             results: components["schemas"]["StorageTargetResponse"];
+        };
+        /** NebulaResults[WorkspaceEncryptionResponse] */
+        WrappedWorkspaceEncryptionResponse: {
+            results: components["schemas"]["WorkspaceEncryptionResponse"];
         };
     };
     responses: never;
@@ -3125,6 +3785,76 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "collections.getDeletion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Deletion operation ID */
+                operation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "results": {
+                     *         "accepted_at": "1970-01-01T00:00:00Z",
+                     *         "operation_id": "00000000-0000-0000-0000-000000000000",
+                     *         "operation_kind": "engram",
+                     *         "state": "accepted",
+                     *         "updated_at": "1970-01-01T00:00:00Z"
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["WrappedDeletionOperationResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3396,7 +4126,10 @@ export interface operations {
     "collections.delete": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Stable key for replaying this deletion request. */
+                "Idempotency-Key"?: string | null;
+            };
             path: {
                 /** @description The unique identifier of the collection to delete */
                 id: string;
@@ -3406,7 +4139,7 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description Successful Response */
-            200: {
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3414,11 +4147,12 @@ export interface operations {
                     /**
                      * @example {
                      *       "results": {
-                     *         "success": false
+                     *         "operation_id": "00000000-0000-0000-0000-000000000000",
+                     *         "status_url": "string"
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["WrappedGenericBooleanResponse"];
+                    "application/json": components["schemas"]["WrappedDeletionOperationAcceptedResponse"];
                 };
             };
             /** @description Bad Request */
@@ -3514,6 +4248,153 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "connectors.listOAuthApps": {
+        parameters: {
+            query: {
+                collection_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "results": [
+                     *         {
+                     *           "configured": false,
+                     *           "provider_family": "google"
+                     *         }
+                     *       ]
+                     *     }
+                     */
+                    "application/json": components["schemas"]["WrappedListOfConnectorOAuthAppResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "connectors.updateOAuthApp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider_family: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConnectorOAuthAppUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "results": {
+                     *         "configured": false,
+                     *         "provider_family": "google"
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["WrappedConnectorOAuthAppResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4119,8 +5000,6 @@ export interface operations {
                 collection_ids?: string[] | null;
                 /** @description JSON string for metadata filtering. Example: '{"metadata.source": {"$eq": "playground"}}' */
                 metadata_filters?: string | null;
-                /** @description Read-your-writes assertion: the WAL-tail overlay path waits for at least this seq to be applied before serving (or returns 503 Unavailable on timeout). REQUIRES exactly one collection_ids entry — without a collection scope the request returns 422 (the per-WAL-shard scalar applied_wal_seq is meaningless across collections). When the served shard has not been migrated to wal_compaction_enabled, the field is accepted but the served path is the legacy overlay (the assertion has no effect — the response's applied_wal_seq will be 0). Pass back the value the matching upload response surfaced. */
-                min_applied_wal_seq?: number | null;
             };
             header?: never;
             path?: never;
@@ -4283,7 +5162,9 @@ export interface operations {
     "memories.deleteMany": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -4294,7 +5175,7 @@ export interface operations {
         };
         responses: {
             /** @description Successful Response */
-            200: {
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4302,11 +5183,12 @@ export interface operations {
                     /**
                      * @example {
                      *       "results": {
-                     *         "success": false
+                     *         "operation_id": "00000000-0000-0000-0000-000000000000",
+                     *         "status_url": "string"
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["WrappedGenericBooleanResponse"] | components["schemas"]["BatchDeleteResponse"];
+                    "application/json": components["schemas"]["WrappedDeletionOperationAcceptedResponse"];
                 };
             };
             /** @description Bad Request */
@@ -4329,6 +5211,76 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "memories.getDeletion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Deletion operation ID */
+                operation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "results": {
+                     *         "accepted_at": "1970-01-01T00:00:00Z",
+                     *         "operation_id": "00000000-0000-0000-0000-000000000000",
+                     *         "operation_kind": "engram",
+                     *         "state": "accepted",
+                     *         "updated_at": "1970-01-01T00:00:00Z"
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["WrappedDeletionOperationResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4432,6 +5384,95 @@ export interface operations {
             };
         };
     };
+    "memories.resolveSearchSources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Retrieval identifier returned by memory search. */
+                retrieval_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "results": {
+                     *         "groups": [
+                     *           {
+                     *             "activation_score": 0,
+                     *             "memory_id": "00000000-0000-0000-0000-000000000000",
+                     *             "memory_kind": "semantic",
+                     *             "rank": 0,
+                     *             "sources": [
+                     *               {
+                     *                 "activation_score": 0,
+                     *                 "evidence_ref": {
+                     *                   "ref_type": "chunk"
+                     *                 },
+                     *                 "id": "00000000-0000-0000-0000-000000000000",
+                     *                 "status": "available",
+                     *                 "supporting_fact_ids": [
+                     *                   "00000000-0000-0000-0000-000000000000"
+                     *                 ],
+                     *                 "text": "string"
+                     *               }
+                     *             ]
+                     *           }
+                     *         ],
+                     *         "retrieval_id": "00000000-0000-0000-0000-000000000000",
+                     *         "status": "complete"
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["WrappedRetrievalAuditSourcesResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     "memories.createUpload": {
         parameters: {
             query: {
@@ -4441,6 +5482,12 @@ export interface operations {
                 content_type: string;
                 /** @description Expected file size in bytes (max 100MB) */
                 file_size: number;
+                /** @description Optional target collection for workspace-scoped uploads. */
+                collection_id?: string | null;
+                /** @description Optional workspace for collectionless uploads. Omit to use the caller's personal workspace. */
+                workspace_id?: string | null;
+                /** @description Optional client key for retrying upload-session creation. */
+                client_idempotency_key?: string | null;
             };
             header?: never;
             path?: never;
@@ -4457,17 +5504,14 @@ export interface operations {
                     /**
                      * @example {
                      *       "results": {
-                     *         "bucket": "string",
-                     *         "download_url": "string",
                      *         "expires_in": 0,
                      *         "max_size": 0,
-                     *         "s3_key": "string",
-                     *         "upload_headers": {},
-                     *         "upload_url": "string"
+                     *         "part_size": 0,
+                     *         "upload_session_id": "00000000-0000-0000-0000-000000000000"
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["WrappedPresignedUploadResponse"];
+                    "application/json": components["schemas"]["WrappedMultipartUploadSessionResponse"];
                 };
             };
             /** @description Bad Request */
@@ -4520,8 +5564,8 @@ export interface operations {
     "memories.deleteUpload": {
         parameters: {
             query: {
-                /** @description S3 key of the file to delete (returned by POST /memories/upload) */
-                s3_key: string;
+                /** @description Upload session ID returned by memories.createUpload. */
+                upload_session_id: string;
             };
             header?: never;
             path?: never;
@@ -4543,6 +5587,168 @@ export interface operations {
                      *     }
                      */
                     "application/json": components["schemas"]["WrappedGenericMessageResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "memories.completeUpload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                upload_session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompleteMultipartUploadRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "results": {
+                     *         "byte_size": 0,
+                     *         "content_type": "string",
+                     *         "raw_sha256": "string",
+                     *         "upload_session_id": "00000000-0000-0000-0000-000000000000"
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["WrappedCompleteMultipartUploadResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "memories.signUploadPart": {
+        parameters: {
+            query: {
+                /** @description Base64-encoded SHA-256 checksum for this part. */
+                checksum_sha256: string;
+            };
+            header?: never;
+            path: {
+                upload_session_id: string;
+                part_number: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "results": {
+                     *         "expires_in": 0,
+                     *         "part_number": 0,
+                     *         "upload_headers": {},
+                     *         "upload_url": "string"
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["WrappedMultipartUploadPartResponse"];
                 };
             };
             /** @description Bad Request */
@@ -4752,8 +5958,13 @@ export interface operations {
     };
     "memories.delete": {
         parameters: {
-            query?: never;
-            header?: never;
+            query: {
+                /** @description Collection context for the deletion. */
+                collection_id: string;
+            };
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
             path: {
                 /** @description Engram ID */
                 id: string;
@@ -4763,7 +5974,7 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description Successful Response */
-            200: {
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4771,11 +5982,12 @@ export interface operations {
                     /**
                      * @example {
                      *       "results": {
-                     *         "success": false
+                     *         "operation_id": "00000000-0000-0000-0000-000000000000",
+                     *         "status_url": "string"
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["WrappedGenericBooleanResponse"];
+                    "application/json": components["schemas"]["WrappedDeletionOperationAcceptedResponse"];
                 };
             };
             /** @description Bad Request */
@@ -4827,9 +6039,9 @@ export interface operations {
     };
     "memories.update": {
         parameters: {
-            query?: {
+            query: {
                 /** @description Collection context for copy-on-write. If provided and engram is shared, creates a copy before modification. */
-                collection_id?: string | null;
+                collection_id: string;
             };
             header?: never;
             path: {
@@ -4959,6 +6171,228 @@ export interface operations {
                      *     }
                      */
                     "application/json": components["schemas"]["WrappedAppendMemoryResponse"] | components["schemas"]["WrappedIngestionResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "workspaces.getManagedEncryption": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "results": {
+                     *         "created_at": "1970-01-01T00:00:00Z",
+                     *         "status": "pending",
+                     *         "updated_at": "1970-01-01T00:00:00Z",
+                     *         "workspace_id": "00000000-0000-0000-0000-000000000000"
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["WrappedWorkspaceEncryptionResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "workspaces.disableManagedEncryption": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "results": {
+                     *         "created_at": "1970-01-01T00:00:00Z",
+                     *         "status": "pending",
+                     *         "updated_at": "1970-01-01T00:00:00Z",
+                     *         "workspace_id": "00000000-0000-0000-0000-000000000000"
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["WrappedWorkspaceEncryptionResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "workspaces.enableManagedEncryption": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "results": {
+                     *         "created_at": "1970-01-01T00:00:00Z",
+                     *         "status": "pending",
+                     *         "updated_at": "1970-01-01T00:00:00Z",
+                     *         "workspace_id": "00000000-0000-0000-0000-000000000000"
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["WrappedWorkspaceEncryptionResponse"];
                 };
             };
             /** @description Bad Request */
