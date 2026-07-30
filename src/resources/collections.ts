@@ -29,6 +29,10 @@ export class CollectionsResource {
       pathParams: {},
       query: undefined,
       body: body,
+      routing: {
+        owner: "workspace",
+        bodyFields: ["workspace_id","workspaceId"],
+      },
       idempotent: false,
       signal: options?.signal,
     })) as { results: components["schemas"]["CollectionResponse"] };
@@ -42,23 +46,51 @@ export class CollectionsResource {
    *
    * This endpoint allows deletion of a collection identified by its
    * UUID. The user must have appropriate permissions to delete the
-   * collection. Deleting a collection removes all associations but does
-   * not delete the engrams within it.
+   * collection. The collection is marked as deleting immediately and
+   * graph/S3 cleanup continues asynchronously. Deleting a collection
+   * removes all associations but does not delete the engrams within it.
    * @operationId collections.delete
    * @endpoint DELETE /v1/collections/{id}
    */
   async delete(
     id: string,
     options?: RequestOptions,
-  ): Promise<components["schemas"]["GenericBooleanResponse"]> {
-    const response = (await this.core.request<components["schemas"]["WrappedGenericBooleanResponse"]>({
+  ): Promise<components["schemas"]["DeletionOperationAcceptedResponse"]> {
+    const response = (await this.core.request<components["schemas"]["WrappedDeletionOperationAcceptedResponse"]>({
       method: "DELETE",
       path: "/v1/collections/{id}",
       pathParams: { id: id },
       query: undefined,
+      headers: options?.idempotencyKey ? { "Idempotency-Key": options.idempotencyKey } : undefined,
+      routing: {
+        owner: "collection",
+        pathFields: ["id"],
+      },
       idempotent: true,
       signal: options?.signal,
-    })) as { results: components["schemas"]["GenericBooleanResponse"] };
+    })) as { results: components["schemas"]["DeletionOperationAcceptedResponse"] };
+    return response.results;
+  }
+
+  /**
+   * Get collection deletion status
+   *
+   * Return the current state and per-target outcomes for a collection deletion operation.
+   * @operationId collections.getDeletion
+   * @endpoint GET /v1/collections/deletions/{operation_id}
+   */
+  async getDeletion(
+    operationId: string,
+    options?: RequestOptions,
+  ): Promise<components["schemas"]["DeletionOperationResponse"]> {
+    const response = (await this.core.request<components["schemas"]["WrappedDeletionOperationResponse"]>({
+      method: "GET",
+      path: "/v1/collections/deletions/{operation_id}",
+      pathParams: { operation_id: operationId },
+      query: undefined,
+      idempotent: true,
+      signal: options?.signal,
+    })) as { results: components["schemas"]["DeletionOperationResponse"] };
     return response.results;
   }
 
