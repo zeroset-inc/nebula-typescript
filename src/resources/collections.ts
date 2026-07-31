@@ -2,6 +2,7 @@
 // Source: nebula-sdks/openapi/openapi.json
 
 import type { components } from "../types.ts";
+import { prepareGeneratedBody, type GeneratedBodyInput } from "../runtime/client.ts";
 import type { NebulaCore, RequestOptions } from "../runtime/client.ts";
 
 export class CollectionsResource {
@@ -20,18 +21,27 @@ export class CollectionsResource {
    * @endpoint POST /v1/collections
    */
   async create(
-    body: components["schemas"]["CreateCollectionRequest"],
+    body: GeneratedBodyInput<components["schemas"]["CreateCollectionRequest"], "collection_id">,
     options?: RequestOptions,
-  ): Promise<components["schemas"]["CollectionResponse"]> {
-    const response = (await this.core.request<components["schemas"]["WrappedCollectionResponse"]>({
+  ): Promise<components["schemas"]["CollectionMutationResult"]> {
+    const response = (await this.core.request<components["schemas"]["WrappedCollectionMutationResult"]>({
       method: "POST",
       path: "/v1/collections",
       pathParams: {},
       query: undefined,
-      body: body,
-      idempotent: false,
+      body: prepareGeneratedBody(body, [{"path":["collection_id"],"kind":"uuid"}]),
+      headers: undefined,
+      routing: {
+        owner: "workspace",
+        bodyFields: ["workspace_id","workspaceId"],
+      },
+      retryable: true,
+      httpSemanticallyIdempotent: false,
+      mutationReplayIdentity: {"source":"body","name":"collection_id","generated":"uuid"},
+      utf8ByteLimits: [{"source":"body","path":["name"],"maximum":256}],
       signal: options?.signal,
-    })) as { results: components["schemas"]["CollectionResponse"] };
+      timeoutMs: options?.timeoutMs,
+    })) as { results: components["schemas"]["CollectionMutationResult"] };
     return response.results;
   }
 
@@ -42,23 +52,29 @@ export class CollectionsResource {
    *
    * This endpoint allows deletion of a collection identified by its
    * UUID. The user must have appropriate permissions to delete the
-   * collection. Deleting a collection removes all associations but does
-   * not delete the engrams within it.
+   * collection. The collection is marked as deleting immediately and
+   * data removal continues asynchronously. Memories shared with other
+   * collections remain available there; memories exclusive to this
+   * collection are removed.
    * @operationId collections.delete
    * @endpoint DELETE /v1/collections/{id}
    */
   async delete(
     id: string,
     options?: RequestOptions,
-  ): Promise<components["schemas"]["GenericBooleanResponse"]> {
-    const response = (await this.core.request<components["schemas"]["WrappedGenericBooleanResponse"]>({
+  ): Promise<components["schemas"]["CollectionMutationResult"]> {
+    const response = (await this.core.request<components["schemas"]["WrappedCollectionMutationResult"]>({
       method: "DELETE",
       path: "/v1/collections/{id}",
       pathParams: { id: id },
       query: undefined,
-      idempotent: true,
+      headers: undefined,
+      retryable: true,
+      httpSemanticallyIdempotent: true,
+      mutationReplayIdentity: {"source":"intrinsic","name":"resource_path"},
       signal: options?.signal,
-    })) as { results: components["schemas"]["GenericBooleanResponse"] };
+      timeoutMs: options?.timeoutMs,
+    })) as { results: components["schemas"]["CollectionMutationResult"] };
     return response.results;
   }
 
@@ -99,8 +115,11 @@ export class CollectionsResource {
       path: "/v1/collections",
       pathParams: {},
       query: { ids: params.ids, name: params.name, cursor: params.cursor, limit: params.limit, owner_only: params.ownerOnly, workspace_id: params.workspaceId },
-      idempotent: true,
+      headers: undefined,
+      retryable: true,
+      httpSemanticallyIdempotent: true,
       signal: options?.signal,
+      timeoutMs: options?.timeoutMs,
     });
   }
 
@@ -124,8 +143,11 @@ export class CollectionsResource {
       path: "/v1/collections/{id}",
       pathParams: { id: id },
       query: undefined,
-      idempotent: true,
+      headers: undefined,
+      retryable: true,
+      httpSemanticallyIdempotent: true,
       signal: options?.signal,
+      timeoutMs: options?.timeoutMs,
     })) as { results: components["schemas"]["CollectionResponse"] };
     return response.results;
   }
@@ -154,8 +176,11 @@ export class CollectionsResource {
       path: "/v1/collections/name/{collection_name}",
       pathParams: { collection_name: params.collectionName },
       query: { owner_id: params.ownerId },
-      idempotent: true,
+      headers: undefined,
+      retryable: true,
+      httpSemanticallyIdempotent: true,
       signal: options?.signal,
+      timeoutMs: options?.timeoutMs,
     })) as { results: components["schemas"]["CollectionResponse"] };
     return response.results;
   }
@@ -185,8 +210,12 @@ export class CollectionsResource {
       pathParams: { id: params.id },
       query: undefined,
       body: params.body,
-      idempotent: false,
+      headers: undefined,
+      retryable: false,
+      httpSemanticallyIdempotent: false,
+      utf8ByteLimits: [{"source":"body","path":["name"],"maximum":256}],
       signal: options?.signal,
+      timeoutMs: options?.timeoutMs,
     })) as { results: components["schemas"]["CollectionResponse"] };
     return response.results;
   }
