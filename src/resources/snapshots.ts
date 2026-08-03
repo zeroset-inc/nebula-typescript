@@ -25,8 +25,11 @@ export class SnapshotsResource {
       pathParams: {},
       query: undefined,
       body: body,
-      idempotent: true,
+      headers: undefined,
+      retryable: false,
+      httpSemanticallyIdempotent: false,
       signal: options?.signal,
+      timeoutMs: options?.timeoutMs,
     })) as { results: components["schemas"]["SnapshotEnvelope-Output"] | components["schemas"]["SnapshotObjectReference"] };
     return response.results;
   }
@@ -49,8 +52,11 @@ export class SnapshotsResource {
       pathParams: {},
       query: undefined,
       body: body,
-      idempotent: false,
+      headers: undefined,
+      retryable: false,
+      httpSemanticallyIdempotent: false,
       signal: options?.signal,
+      timeoutMs: options?.timeoutMs,
     })) as { results: components["schemas"]["SnapshotImportResult"] };
     return response.results;
   }
