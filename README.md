@@ -30,19 +30,21 @@ const client = new Nebula({
   apiKey: process.env.NEBULA_API_KEY,
 });
 
-const result = await client.memories.create({
+const result = await client.memory.store({
   collection_id: "01234567-...",
   raw_text: "hello, world",
 });
 
-const results = await client.memories.search({ query: "hello" });
+const results = await client.memory.search({
+  query: "hello",
+  retrieval_operation_id: crypto.randomUUID(),
+});
 ```
 
-Resource methods (`client.memories.*`, `client.collections.*`,
+Resource methods (`client.memory.*`, `client.collections.*`,
 `client.connectors.*`, `client.snapshots.*`) are generated directly from
-the OpenAPI spec. A small DX layer at `src/lib/dx.ts` adds polymorphic
-helpers like `storeMemory` (dispatches create-vs-append based on whether
-a `memory_id` is present); prefer the resource methods for everything else.
+the OpenAPI spec. A small DX layer at `src/lib/dx.ts` adds positional
+convenience methods for operations whose generated wire shape is less ergonomic.
 
 ## Auth
 
