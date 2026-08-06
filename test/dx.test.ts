@@ -1,6 +1,8 @@
 import { describe, test, expect } from "bun:test";
 import { Nebula, NebulaClient } from "../src/index.ts";
 
+const RETRIEVAL_OPERATION_ID = "11111111-1111-4111-8111-111111111111";
+
 interface CapturedRequest {
   url: string;
   method: string;
@@ -40,94 +42,104 @@ describe("DX layer", () => {
   test("Nebula extends NebulaClient", () => {
     const client = new Nebula({ baseUrl: "https://api.example.com" });
     expect(client).toBeInstanceOf(NebulaClient);
-    expect(client.memories).toBeDefined();
+    expect(client.memory).toBeDefined();
     expect(client.collections).toBeDefined();
   });
 
-  test("storeMemory(create) dispatches to memories.create and returns id", async () => {
+  test("memory.store uses one document and conversation surface", async () => {
     const { fetchImpl, calls } = makeMockFetch(() =>
-      jsonResponse(200, { results: { id: "mem_123", message: "ok" } })
+      jsonResponse(200, {
+        results: {
+          id: "11111111-2222-4333-8444-555555555555",
+          state: "processing",
+          failure: null,
+        },
+      })
     );
     const client = new Nebula({ baseUrl: "https://api.example.com", fetchImpl });
-    const id = await client.storeMemory({ collection_id: "c1", raw_text: "hello" });
-    expect(id).toBe("mem_123");
+    const input = {
+      collection_id: "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee",
+      messages: [{ role: "user", content: "hello" }],
+    };
+    const result = await client.memory.store(input);
+    expect(result.id).toBe("11111111-2222-4333-8444-555555555555");
     expect(calls.length).toBe(1);
     expect(calls[0].url).toBe("https://api.example.com/v1/memories");
     expect(calls[0].method).toBe("POST");
-    expect(calls[0].body).toMatchObject({ collection_id: "c1", raw_text: "hello" });
-  });
-
-  test("storeMemory(append) dispatches to memories.append when memory_id set", async () => {
-    const { fetchImpl, calls } = makeMockFetch(() =>
-      jsonResponse(200, { results: { id: "appended" } })
+    expect(calls[0].body).toMatchObject(input);
+    expect((calls[0].body as Record<string, unknown>).memory_id).toMatch(
+      /^[0-9a-f-]{36}$/,
     );
-    const client = new Nebula({ baseUrl: "https://api.example.com", fetchImpl });
-    const id = await client.storeMemory({
-      memory_id: "mem_existing",
-      collection_id: "c1",
-      raw_text: "more content",
-    });
-    expect(id).toBe("mem_existing");
-    expect(calls.length).toBe(1);
-    expect(calls[0].url).toBe("https://api.example.com/v1/memories/mem_existing/append");
+    expect(input).not.toHaveProperty("memory_id");
   });
 
-  test("storeMemory(content string) maps to raw_text", async () => {
-    const { fetchImpl, calls } = makeMockFetch(() =>
-      jsonResponse(200, { results: { id: "mem_x" } })
-    );
-    const client = new Nebula({ baseUrl: "https://api.example.com", fetchImpl });
-    await client.storeMemory({ collection_id: "c1", content: "shorthand" } as never);
-    expect(calls[0].body).toMatchObject({ raw_text: "shorthand" });
-  });
-
-  test("storeMemory(messages) sets kind='conversation' and omits engram_type", async () => {
-    const { fetchImpl, calls } = makeMockFetch(() =>
-      jsonResponse(200, { results: { id: "mem_conv" } })
-    );
-    const client = new Nebula({ baseUrl: "https://api.example.com", fetchImpl });
-    await client.storeMemory({
-      collection_id: "c1",
-      messages: [{ role: "user", content: "hi" }],
-    });
-    expect(calls[0].body).toMatchObject({ kind: "conversation" });
-    expect((calls[0].body as Record<string, unknown>).engram_type).toBeUndefined();
-  });
-
-  test("memories.search peels the inline-anyOf `{results: X}` envelope", async () => {
+  test("memory.search peels the inline-anyOf `{results: X}` envelope", async () => {
     const { fetchImpl } = makeMockFetch(() =>
       jsonResponse(200, { results: { entities: [], relationships: [] } })
     );
     const client = new Nebula({ baseUrl: "https://api.example.com", fetchImpl });
-    const result = await client.memories.search({ query: "find this" } as never);
+    const result = await client.memory.search({
+      query: "find this",
+      retrieval_operation_id: RETRIEVAL_OPERATION_ID,
+    });
     // Wire envelope `{results: X}` peeled by the generator (the response
     // schema is an inline anyOf of Wrapped* variants — each variant
     // unwraps to its inner type).
     expect(result).toEqual({ entities: [], relationships: [] });
   });
 
-  test("memories.delete hits DELETE path and returns the unwrapped success body", async () => {
+  test("memory.delete returns the unwrapped durable product state", async () => {
+    const memoryId = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
     const { fetchImpl, calls } = makeMockFetch(() =>
-      jsonResponse(200, { results: { success: true } })
+      jsonResponse(202, {
+        results: { id: memoryId, state: "deleting", failure: null },
+      })
     );
     const client = new Nebula({ baseUrl: "https://api.example.com", fetchImpl });
-    const result = (await client.memories.delete("mem_to_delete")) as { success?: boolean };
+    const result = await client.memory.delete({
+      id: memoryId,
+      collectionId: "collection-1",
+    });
     expect(calls[0].method).toBe("DELETE");
-    expect(calls[0].url).toBe("https://api.example.com/v1/memories/mem_to_delete");
-    // Wire envelope was {results: {success: true}}; the generator peeled
-    // it so callers see {success: true} directly.
-    expect(result.success).toBe(true);
+    expect(calls[0].url).toBe(
+      `https://api.example.com/v1/memories/${memoryId}?collection_id=collection-1`
+    );
+    expect(calls[0].headers["x-nebula-owner-key"]).toBe("collection:collection-1");
+    expect(result.state).toBe("deleting");
   });
 
-  test("memories.deleteMany takes the id list as the positional body", async () => {
+  test("memory.deleteMany takes a collection-scoped body", async () => {
+    const memoryIds = [
+      "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee",
+      "11111111-aaaa-4bbb-8ccc-222222222222",
+    ];
     const { fetchImpl, calls } = makeMockFetch(() =>
-      jsonResponse(200, { results: { succeeded: 2, failed: 0 } })
+      jsonResponse(202, {
+        results: {
+          memories: memoryIds.map((id) => ({
+            id,
+            state: "deleting",
+            failure: null,
+          })),
+        },
+      })
     );
     const client = new Nebula({ baseUrl: "https://api.example.com", fetchImpl });
-    await client.memories.deleteMany(["m1", "m2"]);
+    const result = await client.memory.deleteMany({
+      collection_id: "collection-1",
+      ids: memoryIds,
+    });
     expect(calls[0].method).toBe("POST");
     expect(calls[0].url).toBe("https://api.example.com/v1/memories/delete");
-    expect(calls[0].body).toEqual(["m1", "m2"]);
+    expect(calls[0].headers["x-nebula-owner-key"]).toBe("collection:collection-1");
+    expect(calls[0].body).toEqual({
+      collection_id: "collection-1",
+      ids: memoryIds,
+    });
+    expect(result.memories.map((memory) => memory.state)).toEqual([
+      "deleting",
+      "deleting",
+    ]);
   });
 
   test("apiKey authenticates via Authorization: Bearer", async () => {
@@ -137,20 +149,26 @@ describe("DX layer", () => {
       apiKey: "key_abc.secret",
       fetchImpl,
     });
-    await client.memories.retrieve("m1");
+    await client.memory.get("m1");
     expect(calls[0].headers.authorization).toBe("Bearer key_abc.secret");
   });
 
-  test("collections.delete returns the unwrapped {success: bool} body", async () => {
-    const { fetchImpl } = makeMockFetch(() =>
-      jsonResponse(200, { results: { success: true } })
+  test("collections.delete returns the durable product state", async () => {
+    const { fetchImpl, calls } = makeMockFetch(() =>
+      jsonResponse(202, {
+        results: {
+          id: "11111111-2222-4333-8444-555555555555",
+          state: "deleting",
+          failure: null,
+        },
+      })
     );
     const client = new Nebula({ baseUrl: "https://api.example.com", fetchImpl });
-    const resp = (await client.collections.delete("c1")) as { success?: boolean };
-    // Wire envelope `{results: {success: true}}` peeled by the generator
-    // → caller sees `{success: true}` directly. No bool coercion (that
-    // was a DX-layer concern; the SDK is wire-faithful otherwise).
-    expect(resp.success).toBe(true);
+    const resp = await client.collections.delete(
+      "11111111-2222-4333-8444-555555555555",
+    );
+    expect(resp.state).toBe("deleting");
+    expect(calls[0].headers["idempotency-key"]).toBeUndefined();
   });
 
   test("listMemories(string) becomes collectionIds array filter", async () => {
@@ -160,5 +178,28 @@ describe("DX layer", () => {
     const client = new Nebula({ baseUrl: "https://api.example.com", fetchImpl });
     await client.listMemories("collection-abc");
     expect(calls[0].url).toContain("collection_ids=collection-abc");
+  });
+
+  test("connectProvider can select a saved workspace OAuth app", async () => {
+    const { fetchImpl, calls } = makeMockFetch(() =>
+      jsonResponse(200, {
+        results: { auth_url: "https://provider.example/auth", state: "state" },
+      })
+    );
+    const client = new Nebula({ baseUrl: "https://api.example.com", fetchImpl });
+
+    await client.connectProvider(
+      "gmail",
+      "collection-1",
+      undefined,
+      { mode: "workspace" },
+    );
+
+    expect(calls[0].url).toBe("https://api.example.com/v1/connectors/gmail/connect");
+    expect(calls[0].method).toBe("POST");
+    expect(calls[0].body).toMatchObject({
+      collection_id: "collection-1",
+      oauth_client_mode: "workspace",
+    });
   });
 });
