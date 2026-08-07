@@ -8,9 +8,9 @@ export class ClientResource {
   constructor(private readonly core: NebulaCore) {}
 
   /**
-   * Health probe
+   * Readiness probe
    *
-   * Lightweight liveness probe. Returns a 200 with a fixed message when the API process is up. Does not verify downstream dependencies (database, storage, workers) — use the internal status endpoints for those.
+   * Returns 200 only after required bootstrap collections, the database pool, and graph storage are ready to serve requests. Use `/v1/liveness` for a process-only probe.
    * @operationId client.health
    * @endpoint GET /v1/health
    */
@@ -20,8 +20,11 @@ export class ClientResource {
       path: "/v1/health",
       pathParams: {},
       query: undefined,
-      idempotent: true,
+      headers: undefined,
+      retryable: true,
+      httpSemanticallyIdempotent: true,
       signal: options?.signal,
+      timeoutMs: options?.timeoutMs,
     })) as { results: components["schemas"]["GenericMessageResponse"] };
     return response.results;
   }
