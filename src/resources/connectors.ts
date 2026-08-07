@@ -27,8 +27,11 @@ export class ConnectorsResource {
       pathParams: { provider: params.provider },
       query: undefined,
       body: params.body,
-      idempotent: false,
+      headers: undefined,
+      retryable: false,
+      httpSemanticallyIdempotent: false,
       signal: options?.signal,
+      timeoutMs: options?.timeoutMs,
     })) as { results: components["schemas"]["ConnectorConnectResponse"] };
     return response.results;
   }
@@ -52,8 +55,11 @@ export class ConnectorsResource {
       path: "/v1/connectors/{connection_id}",
       pathParams: { connection_id: params.connectionId },
       query: { delete_memories: params.deleteMemories },
-      idempotent: true,
+      headers: undefined,
+      retryable: false,
+      httpSemanticallyIdempotent: true,
       signal: options?.signal,
+      timeoutMs: options?.timeoutMs,
     })) as { results: components["schemas"]["ConnectorDisconnectResponse"] };
     return response.results;
   }
@@ -76,9 +82,39 @@ export class ConnectorsResource {
       path: "/v1/connectors",
       pathParams: {},
       query: { collection_id: params.collectionId },
-      idempotent: true,
+      headers: undefined,
+      retryable: true,
+      httpSemanticallyIdempotent: true,
       signal: options?.signal,
+      timeoutMs: options?.timeoutMs,
     })) as { results: Array<components["schemas"]["ConnectorConnectionResponse"]> };
+    return response.results;
+  }
+
+  /**
+   * List workspace connector OAuth app registrations
+   *
+   * Return the workspace-level OAuth app registrations used by Google and Microsoft 365 connectors for the requested collection's workspace. Client secrets are never returned.
+   * @operationId connectors.listOAuthApps
+   * @endpoint GET /v1/connectors/oauth-apps
+   */
+  async listOAuthApps(
+    params: {
+  collectionId: string;
+},
+    options?: RequestOptions,
+  ): Promise<Array<components["schemas"]["ConnectorOAuthAppResponse"]>> {
+    const response = (await this.core.request<components["schemas"]["WrappedListOfConnectorOAuthAppResponse"]>({
+      method: "GET",
+      path: "/v1/connectors/oauth-apps",
+      pathParams: {},
+      query: { collection_id: params.collectionId },
+      headers: undefined,
+      retryable: true,
+      httpSemanticallyIdempotent: true,
+      signal: options?.signal,
+      timeoutMs: options?.timeoutMs,
+    })) as { results: Array<components["schemas"]["ConnectorOAuthAppResponse"]> };
     return response.results;
   }
 
@@ -95,8 +131,11 @@ export class ConnectorsResource {
       path: "/v1/connectors/providers",
       pathParams: {},
       query: undefined,
-      idempotent: true,
+      headers: undefined,
+      retryable: true,
+      httpSemanticallyIdempotent: true,
       signal: options?.signal,
+      timeoutMs: options?.timeoutMs,
     })) as { results: Array<string> };
     return response.results;
   }
@@ -117,8 +156,11 @@ export class ConnectorsResource {
       path: "/v1/connectors/{connection_id}",
       pathParams: { connection_id: connectionId },
       query: undefined,
-      idempotent: true,
+      headers: undefined,
+      retryable: true,
+      httpSemanticallyIdempotent: true,
       signal: options?.signal,
+      timeoutMs: options?.timeoutMs,
     })) as { results: components["schemas"]["ConnectorConnectionResponse"] };
     return response.results;
   }
@@ -139,9 +181,41 @@ export class ConnectorsResource {
       path: "/v1/connectors/{connection_id}/sync",
       pathParams: { connection_id: connectionId },
       query: undefined,
-      idempotent: true,
+      headers: undefined,
+      retryable: false,
+      httpSemanticallyIdempotent: false,
       signal: options?.signal,
+      timeoutMs: options?.timeoutMs,
     })) as { results: components["schemas"]["ConnectorSyncResponse"] };
+    return response.results;
+  }
+
+  /**
+   * Update a workspace connector OAuth app
+   *
+   * Update non-secret workspace OAuth app settings for a collection's workspace. Google apps can provide Pub/Sub settings to enable Gmail real-time sync. Client secrets are never returned.
+   * @operationId connectors.updateOAuthApp
+   * @endpoint PATCH /v1/connectors/oauth-apps/{provider_family}
+   */
+  async updateOAuthApp(
+    params: {
+  providerFamily: string;
+  body: components["schemas"]["ConnectorOAuthAppUpdateRequest"];
+},
+    options?: RequestOptions,
+  ): Promise<components["schemas"]["ConnectorOAuthAppResponse"]> {
+    const response = (await this.core.request<components["schemas"]["WrappedConnectorOAuthAppResponse"]>({
+      method: "PATCH",
+      path: "/v1/connectors/oauth-apps/{provider_family}",
+      pathParams: { provider_family: params.providerFamily },
+      query: undefined,
+      body: params.body,
+      headers: undefined,
+      retryable: false,
+      httpSemanticallyIdempotent: false,
+      signal: options?.signal,
+      timeoutMs: options?.timeoutMs,
+    })) as { results: components["schemas"]["ConnectorOAuthAppResponse"] };
     return response.results;
   }
 
