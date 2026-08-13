@@ -8,6 +8,34 @@ export class ConnectorsResource {
   constructor(private readonly core: NebulaCore) {}
 
   /**
+   * Approve a mass-withdrawal plan
+   *
+   * Approve exactly the reviewed candidate set and schedule a new sync. Any change to that set requires a new approval.
+   * @operationId connectors.approveWithdrawalPlan
+   * @endpoint POST /v1/connectors/{connection_id}/withdrawal-plan/{candidate_digest}/approve
+   */
+  async approveWithdrawalPlan(
+    params: {
+  connectionId: string;
+  candidateDigest: string;
+},
+    options?: RequestOptions,
+  ): Promise<components["schemas"]["ConnectorSyncResponse"]> {
+    const response = (await this.core.request<components["schemas"]["WrappedConnectorSyncResponse"]>({
+      method: "POST",
+      path: "/v1/connectors/{connection_id}/withdrawal-plan/{candidate_digest}/approve",
+      pathParams: { connection_id: params.connectionId, candidate_digest: params.candidateDigest },
+      query: undefined,
+      headers: undefined,
+      retryable: false,
+      httpSemanticallyIdempotent: false,
+      signal: options?.signal,
+      timeoutMs: options?.timeoutMs,
+    })) as { results: components["schemas"]["ConnectorSyncResponse"] };
+    return response.results;
+  }
+
+  /**
    * Start OAuth connection flow
    *
    * Start the OAuth connection flow for the given external provider. Returns the authorization URL the user should visit to grant Nebula access. After consent the provider redirects back to Nebula and the connection becomes active.
@@ -27,8 +55,11 @@ export class ConnectorsResource {
       pathParams: { provider: params.provider },
       query: undefined,
       body: params.body,
-      idempotent: false,
+      headers: undefined,
+      retryable: false,
+      httpSemanticallyIdempotent: false,
       signal: options?.signal,
+      timeoutMs: options?.timeoutMs,
     })) as { results: components["schemas"]["ConnectorConnectResponse"] };
     return response.results;
   }
@@ -52,9 +83,39 @@ export class ConnectorsResource {
       path: "/v1/connectors/{connection_id}",
       pathParams: { connection_id: params.connectionId },
       query: { delete_memories: params.deleteMemories },
-      idempotent: true,
+      headers: undefined,
+      retryable: false,
+      httpSemanticallyIdempotent: true,
       signal: options?.signal,
+      timeoutMs: options?.timeoutMs,
     })) as { results: components["schemas"]["ConnectorDisconnectResponse"] };
+    return response.results;
+  }
+
+  /**
+   * Get hosted Microsoft Entra consent status
+   *
+   * Return the hosted Microsoft 365 tenant consent state for a workspace without exposing credentials.
+   * @operationId connectors.getHostedM365AdminConsent
+   * @endpoint GET /v1/connectors/m365/admin-consent
+   */
+  async getHostedM365AdminConsent(
+    params: {
+  workspaceId: string;
+},
+    options?: RequestOptions,
+  ): Promise<components["schemas"]["HostedM365ConsentStatusResponse"]> {
+    const response = (await this.core.request<components["schemas"]["WrappedHostedM365ConsentStatusResponse"]>({
+      method: "GET",
+      path: "/v1/connectors/m365/admin-consent",
+      pathParams: {},
+      query: { workspace_id: params.workspaceId },
+      headers: undefined,
+      retryable: true,
+      httpSemanticallyIdempotent: true,
+      signal: options?.signal,
+      timeoutMs: options?.timeoutMs,
+    })) as { results: components["schemas"]["HostedM365ConsentStatusResponse"] };
     return response.results;
   }
 
@@ -76,9 +137,39 @@ export class ConnectorsResource {
       path: "/v1/connectors",
       pathParams: {},
       query: { collection_id: params.collectionId },
-      idempotent: true,
+      headers: undefined,
+      retryable: true,
+      httpSemanticallyIdempotent: true,
       signal: options?.signal,
+      timeoutMs: options?.timeoutMs,
     })) as { results: Array<components["schemas"]["ConnectorConnectionResponse"]> };
+    return response.results;
+  }
+
+  /**
+   * List workspace connector OAuth app registrations
+   *
+   * Return the workspace-level OAuth app registrations used by Google and Microsoft 365 connectors for the requested collection's workspace. Client secrets are never returned.
+   * @operationId connectors.listOAuthApps
+   * @endpoint GET /v1/connectors/oauth-apps
+   */
+  async listOAuthApps(
+    params: {
+  collectionId: string;
+},
+    options?: RequestOptions,
+  ): Promise<Array<components["schemas"]["ConnectorOAuthAppResponse"]>> {
+    const response = (await this.core.request<components["schemas"]["WrappedListOfConnectorOAuthAppResponse"]>({
+      method: "GET",
+      path: "/v1/connectors/oauth-apps",
+      pathParams: {},
+      query: { collection_id: params.collectionId },
+      headers: undefined,
+      retryable: true,
+      httpSemanticallyIdempotent: true,
+      signal: options?.signal,
+      timeoutMs: options?.timeoutMs,
+    })) as { results: Array<components["schemas"]["ConnectorOAuthAppResponse"]> };
     return response.results;
   }
 
@@ -95,9 +186,40 @@ export class ConnectorsResource {
       path: "/v1/connectors/providers",
       pathParams: {},
       query: undefined,
-      idempotent: true,
+      headers: undefined,
+      retryable: true,
+      httpSemanticallyIdempotent: true,
       signal: options?.signal,
+      timeoutMs: options?.timeoutMs,
     })) as { results: Array<string> };
+    return response.results;
+  }
+
+  /**
+   * Retry a failed source withdrawal
+   *
+   * Reset a terminally failed deletion handoff and schedule a new bounded deletion attempt.
+   * @operationId connectors.requeueWithdrawal
+   * @endpoint POST /v1/connectors/{connection_id}/withdrawals/{engram_id}/requeue
+   */
+  async requeueWithdrawal(
+    params: {
+  connectionId: string;
+  engramId: string;
+},
+    options?: RequestOptions,
+  ): Promise<components["schemas"]["ConnectorSyncResponse"]> {
+    const response = (await this.core.request<components["schemas"]["WrappedConnectorSyncResponse"]>({
+      method: "POST",
+      path: "/v1/connectors/{connection_id}/withdrawals/{engram_id}/requeue",
+      pathParams: { connection_id: params.connectionId, engram_id: params.engramId },
+      query: undefined,
+      headers: undefined,
+      retryable: false,
+      httpSemanticallyIdempotent: false,
+      signal: options?.signal,
+      timeoutMs: options?.timeoutMs,
+    })) as { results: components["schemas"]["ConnectorSyncResponse"] };
     return response.results;
   }
 
@@ -117,9 +239,63 @@ export class ConnectorsResource {
       path: "/v1/connectors/{connection_id}",
       pathParams: { connection_id: connectionId },
       query: undefined,
-      idempotent: true,
+      headers: undefined,
+      retryable: true,
+      httpSemanticallyIdempotent: true,
       signal: options?.signal,
+      timeoutMs: options?.timeoutMs,
     })) as { results: components["schemas"]["ConnectorConnectionResponse"] };
+    return response.results;
+  }
+
+  /**
+   * Get a pending mass-withdrawal plan
+   *
+   * Return the operator-review plan created when a sync would remove more source items than the connection's automatic safety allowance.
+   * @operationId connectors.retrieveWithdrawalPlan
+   * @endpoint GET /v1/connectors/{connection_id}/withdrawal-plan
+   */
+  async retrieveWithdrawalPlan(
+    connectionId: string,
+    options?: RequestOptions,
+  ): Promise<components["schemas"]["ConnectorWithdrawalPlanResponse"] | null> {
+    const response = (await this.core.request<components["schemas"]["WrappedConnectorWithdrawalPlanResponseOrNoneType"]>({
+      method: "GET",
+      path: "/v1/connectors/{connection_id}/withdrawal-plan",
+      pathParams: { connection_id: connectionId },
+      query: undefined,
+      headers: undefined,
+      retryable: true,
+      httpSemanticallyIdempotent: true,
+      signal: options?.signal,
+      timeoutMs: options?.timeoutMs,
+    })) as { results: components["schemas"]["ConnectorWithdrawalPlanResponse"] | null };
+    return response.results;
+  }
+
+  /**
+   * Start hosted Microsoft Entra admin consent
+   *
+   * Create a one-time Entra administrator consent URL for a hosted Microsoft 365 tenant bound to this workspace.
+   * @operationId connectors.startHostedM365AdminConsent
+   * @endpoint POST /v1/connectors/m365/admin-consent
+   */
+  async startHostedM365AdminConsent(
+    body: components["schemas"]["HostedM365ConsentStartRequest"],
+    options?: RequestOptions,
+  ): Promise<components["schemas"]["HostedM365ConsentStartResponse"]> {
+    const response = (await this.core.request<components["schemas"]["WrappedHostedM365ConsentStartResponse"]>({
+      method: "POST",
+      path: "/v1/connectors/m365/admin-consent",
+      pathParams: {},
+      query: undefined,
+      body: body,
+      headers: undefined,
+      retryable: false,
+      httpSemanticallyIdempotent: false,
+      signal: options?.signal,
+      timeoutMs: options?.timeoutMs,
+    })) as { results: components["schemas"]["HostedM365ConsentStartResponse"] };
     return response.results;
   }
 
@@ -139,9 +315,70 @@ export class ConnectorsResource {
       path: "/v1/connectors/{connection_id}/sync",
       pathParams: { connection_id: connectionId },
       query: undefined,
-      idempotent: true,
+      headers: undefined,
+      retryable: false,
+      httpSemanticallyIdempotent: false,
       signal: options?.signal,
+      timeoutMs: options?.timeoutMs,
     })) as { results: components["schemas"]["ConnectorSyncResponse"] };
+    return response.results;
+  }
+
+  /**
+   * Update connector config and perform a full resync
+   *
+   * Replace a connection's provider scope and start a full resync.
+   * @operationId connectors.updateConfig
+   * @endpoint PATCH /v1/connectors/{connection_id}/config
+   */
+  async updateConfig(
+    params: {
+  connectionId: string;
+  body: components["schemas"]["UpdateConfigRequest"];
+},
+    options?: RequestOptions,
+  ): Promise<components["schemas"]["ConnectorConfigUpdateResponse"]> {
+    const response = (await this.core.request<components["schemas"]["WrappedConnectorConfigUpdateResponse"]>({
+      method: "PATCH",
+      path: "/v1/connectors/{connection_id}/config",
+      pathParams: { connection_id: params.connectionId },
+      query: undefined,
+      body: params.body,
+      headers: undefined,
+      retryable: false,
+      httpSemanticallyIdempotent: false,
+      signal: options?.signal,
+      timeoutMs: options?.timeoutMs,
+    })) as { results: components["schemas"]["ConnectorConfigUpdateResponse"] };
+    return response.results;
+  }
+
+  /**
+   * Update a workspace connector OAuth app
+   *
+   * Update non-secret workspace OAuth app settings for a collection's workspace. Google apps can provide Pub/Sub settings to enable Gmail real-time sync. Client secrets are never returned.
+   * @operationId connectors.updateOAuthApp
+   * @endpoint PATCH /v1/connectors/oauth-apps/{provider_family}
+   */
+  async updateOAuthApp(
+    params: {
+  providerFamily: string;
+  body: components["schemas"]["ConnectorOAuthAppUpdateRequest"];
+},
+    options?: RequestOptions,
+  ): Promise<components["schemas"]["ConnectorOAuthAppResponse"]> {
+    const response = (await this.core.request<components["schemas"]["WrappedConnectorOAuthAppResponse"]>({
+      method: "PATCH",
+      path: "/v1/connectors/oauth-apps/{provider_family}",
+      pathParams: { provider_family: params.providerFamily },
+      query: undefined,
+      body: params.body,
+      headers: undefined,
+      retryable: false,
+      httpSemanticallyIdempotent: false,
+      signal: options?.signal,
+      timeoutMs: options?.timeoutMs,
+    })) as { results: components["schemas"]["ConnectorOAuthAppResponse"] };
     return response.results;
   }
 
