@@ -5,7 +5,10 @@ import { NebulaCore, type ClientOptions } from "./runtime/client.ts";
 import { ClientResource } from "./resources/client.ts";
 import { CollectionsResource } from "./resources/collections.ts";
 import { ConnectorsResource } from "./resources/connectors.ts";
-import { MemoriesResource } from "./resources/memories.ts";
+import { EnterpriseResource } from "./resources/enterprise.ts";
+import { IngestionOperationResource } from "./resources/ingestionOperation.ts";
+import { MarketplaceResource } from "./resources/marketplace.ts";
+import { MemoryResource } from "./resources/memory.ts";
 import { SnapshotsResource } from "./resources/snapshots.ts";
 import { WorkspacesResource } from "./resources/workspaces.ts";
 
@@ -14,7 +17,10 @@ export class NebulaClient {
   readonly client: ClientResource;
   readonly collections: CollectionsResource;
   readonly connectors: ConnectorsResource;
-  readonly memories: MemoriesResource;
+  readonly enterprise: EnterpriseResource;
+  readonly ingestionOperation: IngestionOperationResource;
+  readonly marketplace: MarketplaceResource;
+  readonly memory: MemoryResource;
   readonly snapshots: SnapshotsResource;
   readonly workspaces: WorkspacesResource;
 
@@ -23,7 +29,10 @@ export class NebulaClient {
     this.client = new ClientResource(this.core);
     this.collections = new CollectionsResource(this.core);
     this.connectors = new ConnectorsResource(this.core);
-    this.memories = new MemoriesResource(this.core);
+    this.enterprise = new EnterpriseResource(this.core);
+    this.ingestionOperation = new IngestionOperationResource(this.core);
+    this.marketplace = new MarketplaceResource(this.core);
+    this.memory = new MemoryResource(this.core);
     this.snapshots = new SnapshotsResource(this.core);
     this.workspaces = new WorkspacesResource(this.core);
   }
