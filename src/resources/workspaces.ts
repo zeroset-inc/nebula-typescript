@@ -8,6 +8,35 @@ export class WorkspacesResource {
   constructor(private readonly core: NebulaCore) {}
 
   /**
+   * Create workspace group
+   *
+   * Create a group under an existing team workspace group.
+   * @operationId workspaces.createGroup
+   * @endpoint POST /v1/workspaces/{workspace_id}/groups
+   */
+  async createGroup(
+    params: {
+  workspaceId: string;
+  body: components["schemas"]["GroupCreateRequest"];
+},
+    options?: RequestOptions,
+  ): Promise<components["schemas"]["GroupResult"]> {
+    const response = (await this.core.request<components["schemas"]["WrappedGroupResult"]>({
+      method: "POST",
+      path: "/v1/workspaces/{workspace_id}/groups",
+      pathParams: { workspace_id: params.workspaceId },
+      query: undefined,
+      body: params.body,
+      headers: undefined,
+      retryable: false,
+      httpSemanticallyIdempotent: false,
+      signal: options?.signal,
+      timeoutMs: options?.timeoutMs,
+    })) as { results: components["schemas"]["GroupResult"] };
+    return response.results;
+  }
+
+  /**
    * Create workspace storage target
    *
    * Register a customer S3 bucket for hosted BYOC storage.
@@ -27,9 +56,93 @@ export class WorkspacesResource {
       pathParams: { workspace_id: params.workspaceId },
       query: undefined,
       body: params.body,
-      idempotent: false,
+      headers: undefined,
+      retryable: false,
+      httpSemanticallyIdempotent: false,
       signal: options?.signal,
+      timeoutMs: options?.timeoutMs,
     })) as { results: components["schemas"]["StorageTargetResponse"] };
+    return response.results;
+  }
+
+  /**
+   * Delete Workspace
+   *
+   * Delete a team workspace. Owner only.
+   * @operationId workspaces.delete
+   * @endpoint DELETE /v1/workspaces/{workspace_id}
+   */
+  async delete(
+    workspaceId: string,
+    options?: RequestOptions,
+  ): Promise<components["schemas"]["WorkspaceMutationResult"]> {
+    const response = (await this.core.request<components["schemas"]["WrappedWorkspaceMutationResult"]>({
+      method: "DELETE",
+      path: "/v1/workspaces/{workspace_id}",
+      pathParams: { workspace_id: workspaceId },
+      query: undefined,
+      headers: undefined,
+      retryable: true,
+      httpSemanticallyIdempotent: true,
+      mutationReplayIdentity: {"source":"intrinsic","name":"resource_path"},
+      signal: options?.signal,
+      timeoutMs: options?.timeoutMs,
+    })) as { results: components["schemas"]["WorkspaceMutationResult"] };
+    return response.results;
+  }
+
+  /**
+   * Delete workspace group
+   *
+   * Delete an empty non-root group. Owner/admin only.
+   * @operationId workspaces.deleteGroup
+   * @endpoint DELETE /v1/workspaces/{workspace_id}/groups/{group_id}
+   */
+  async deleteGroup(
+    params: {
+  workspaceId: string;
+  groupId: string;
+},
+    options?: RequestOptions,
+  ): Promise<components["schemas"]["GenericMessageResponse"]> {
+    const response = (await this.core.request<components["schemas"]["WrappedGenericMessageResponse"]>({
+      method: "DELETE",
+      path: "/v1/workspaces/{workspace_id}/groups/{group_id}",
+      pathParams: { workspace_id: params.workspaceId, group_id: params.groupId },
+      query: undefined,
+      headers: undefined,
+      retryable: false,
+      httpSemanticallyIdempotent: true,
+      signal: options?.signal,
+      timeoutMs: options?.timeoutMs,
+    })) as { results: components["schemas"]["GenericMessageResponse"] };
+    return response.results;
+  }
+
+  /**
+   * Disable workspace managed encryption for new writes
+   *
+   * Stop encrypting new writes under the workspace key. The key stays
+   * enabled so existing objects remain readable; scheduling key deletion
+   * is a separate, gated operation.
+   * @operationId workspaces.disableManagedEncryption
+   * @endpoint POST /v1/workspaces/{workspace_id}/encryption/disable
+   */
+  async disableManagedEncryption(
+    workspaceId: string,
+    options?: RequestOptions,
+  ): Promise<components["schemas"]["WorkspaceEncryptionResponse"]> {
+    const response = (await this.core.request<components["schemas"]["WrappedWorkspaceEncryptionResponse"]>({
+      method: "POST",
+      path: "/v1/workspaces/{workspace_id}/encryption/disable",
+      pathParams: { workspace_id: workspaceId },
+      query: undefined,
+      headers: undefined,
+      retryable: false,
+      httpSemanticallyIdempotent: false,
+      signal: options?.signal,
+      timeoutMs: options?.timeoutMs,
+    })) as { results: components["schemas"]["WorkspaceEncryptionResponse"] };
     return response.results;
   }
 
@@ -52,10 +165,95 @@ export class WorkspacesResource {
       path: "/v1/workspaces/{workspace_id}/storage-targets/{target_id}",
       pathParams: { workspace_id: params.workspaceId, target_id: params.targetId },
       query: undefined,
-      idempotent: false,
+      headers: undefined,
+      retryable: false,
+      httpSemanticallyIdempotent: true,
       signal: options?.signal,
+      timeoutMs: options?.timeoutMs,
     })) as { results: components["schemas"]["StorageTargetResponse"] };
     return response.results;
+  }
+
+  /**
+   * Enable workspace managed encryption
+   *
+   * Provision a dedicated Nebula-managed KMS key for the workspace and
+   * encrypt new graph-plane object writes under it. Forward-only:
+   * existing objects are re-encrypted lazily as data is rewritten, not
+   * immediately.
+   * @operationId workspaces.enableManagedEncryption
+   * @endpoint POST /v1/workspaces/{workspace_id}/encryption/enable
+   */
+  async enableManagedEncryption(
+    workspaceId: string,
+    options?: RequestOptions,
+  ): Promise<components["schemas"]["WorkspaceEncryptionResponse"]> {
+    const response = (await this.core.request<components["schemas"]["WrappedWorkspaceEncryptionResponse"]>({
+      method: "POST",
+      path: "/v1/workspaces/{workspace_id}/encryption/enable",
+      pathParams: { workspace_id: workspaceId },
+      query: undefined,
+      headers: undefined,
+      retryable: false,
+      httpSemanticallyIdempotent: false,
+      signal: options?.signal,
+      timeoutMs: options?.timeoutMs,
+    })) as { results: components["schemas"]["WorkspaceEncryptionResponse"] };
+    return response.results;
+  }
+
+  /**
+   * Get workspace managed encryption status
+   *
+   * Current managed-encryption status for the workspace.
+   * @operationId workspaces.getManagedEncryption
+   * @endpoint GET /v1/workspaces/{workspace_id}/encryption
+   */
+  async getManagedEncryption(
+    workspaceId: string,
+    options?: RequestOptions,
+  ): Promise<components["schemas"]["WorkspaceEncryptionResponse"]> {
+    const response = (await this.core.request<components["schemas"]["WrappedWorkspaceEncryptionResponse"]>({
+      method: "GET",
+      path: "/v1/workspaces/{workspace_id}/encryption",
+      pathParams: { workspace_id: workspaceId },
+      query: undefined,
+      headers: undefined,
+      retryable: true,
+      httpSemanticallyIdempotent: true,
+      signal: options?.signal,
+      timeoutMs: options?.timeoutMs,
+    })) as { results: components["schemas"]["WorkspaceEncryptionResponse"] };
+    return response.results;
+  }
+
+  /**
+   * List workspace groups
+   *
+   * List groups for a team workspace.
+   * @operationId workspaces.listGroups
+   * @endpoint GET /v1/workspaces/{workspace_id}/groups
+   */
+  async listGroups(
+    params: {
+  workspaceId: string;
+  /** Opaque pagination cursor. Pass the next_cursor from a previous response to fetch the next page. */
+  cursor?: string | null;
+  limit?: number;
+},
+    options?: RequestOptions,
+  ): Promise<components["schemas"]["PaginatedGroupResponse"]> {
+    return this.core.request<components["schemas"]["PaginatedGroupResponse"]>({
+      method: "GET",
+      path: "/v1/workspaces/{workspace_id}/groups",
+      pathParams: { workspace_id: params.workspaceId },
+      query: { cursor: params.cursor, limit: params.limit },
+      headers: undefined,
+      retryable: true,
+      httpSemanticallyIdempotent: true,
+      signal: options?.signal,
+      timeoutMs: options?.timeoutMs,
+    });
   }
 
   /**
@@ -74,9 +272,101 @@ export class WorkspacesResource {
       path: "/v1/workspaces/{workspace_id}/storage-targets",
       pathParams: { workspace_id: workspaceId },
       query: undefined,
-      idempotent: true,
+      headers: undefined,
+      retryable: true,
+      httpSemanticallyIdempotent: true,
       signal: options?.signal,
+      timeoutMs: options?.timeoutMs,
     })) as { results: Array<components["schemas"]["StorageTargetResponse"]> };
+    return response.results;
+  }
+
+  /**
+   * Remove Workspace Member
+   *
+   * Remove a member from a workspace. Owner/admin only.
+   * @operationId workspaces.removeMember
+   * @endpoint DELETE /v1/workspaces/{workspace_id}/members/{user_id}
+   */
+  async removeMember(
+    params: {
+  workspaceId: string;
+  userId: string;
+},
+    options?: RequestOptions,
+  ): Promise<components["schemas"]["WorkspaceMutationResult"]> {
+    const response = (await this.core.request<components["schemas"]["WrappedWorkspaceMutationResult"]>({
+      method: "DELETE",
+      path: "/v1/workspaces/{workspace_id}/members/{user_id}",
+      pathParams: { workspace_id: params.workspaceId, user_id: params.userId },
+      query: undefined,
+      headers: undefined,
+      retryable: true,
+      httpSemanticallyIdempotent: true,
+      mutationReplayIdentity: {"source":"intrinsic","name":"resource_path"},
+      signal: options?.signal,
+      timeoutMs: options?.timeoutMs,
+    })) as { results: components["schemas"]["WorkspaceMutationResult"] };
+    return response.results;
+  }
+
+  /**
+   * Rename workspace group
+   *
+   * Rename a non-root group. Owner/admin only.
+   * @operationId workspaces.updateGroup
+   * @endpoint PATCH /v1/workspaces/{workspace_id}/groups/{group_id}
+   */
+  async updateGroup(
+    params: {
+  workspaceId: string;
+  groupId: string;
+  body: components["schemas"]["GroupUpdateRequest"];
+},
+    options?: RequestOptions,
+  ): Promise<components["schemas"]["GroupResult"]> {
+    const response = (await this.core.request<components["schemas"]["WrappedGroupResult"]>({
+      method: "PATCH",
+      path: "/v1/workspaces/{workspace_id}/groups/{group_id}",
+      pathParams: { workspace_id: params.workspaceId, group_id: params.groupId },
+      query: undefined,
+      body: params.body,
+      headers: undefined,
+      retryable: false,
+      httpSemanticallyIdempotent: false,
+      signal: options?.signal,
+      timeoutMs: options?.timeoutMs,
+    })) as { results: components["schemas"]["GroupResult"] };
+    return response.results;
+  }
+
+  /**
+   * Update workspace group membership
+   *
+   * Atomically add and remove explicit local-group members.
+   * @operationId workspaces.updateGroupMembers
+   * @endpoint PATCH /v1/workspaces/{workspace_id}/groups/{group_id}/members
+   */
+  async updateGroupMembers(
+    params: {
+  workspaceId: string;
+  groupId: string;
+  body: components["schemas"]["GroupMembershipDeltaRequest"];
+},
+    options?: RequestOptions,
+  ): Promise<components["schemas"]["GenericMessageResponse"]> {
+    const response = (await this.core.request<components["schemas"]["WrappedGenericMessageResponse"]>({
+      method: "PATCH",
+      path: "/v1/workspaces/{workspace_id}/groups/{group_id}/members",
+      pathParams: { workspace_id: params.workspaceId, group_id: params.groupId },
+      query: undefined,
+      body: params.body,
+      headers: undefined,
+      retryable: false,
+      httpSemanticallyIdempotent: false,
+      signal: options?.signal,
+      timeoutMs: options?.timeoutMs,
+    })) as { results: components["schemas"]["GenericMessageResponse"] };
     return response.results;
   }
 
@@ -99,8 +389,11 @@ export class WorkspacesResource {
       path: "/v1/workspaces/{workspace_id}/storage-targets/{target_id}/validate",
       pathParams: { workspace_id: params.workspaceId, target_id: params.targetId },
       query: undefined,
-      idempotent: false,
+      headers: undefined,
+      retryable: false,
+      httpSemanticallyIdempotent: false,
       signal: options?.signal,
+      timeoutMs: options?.timeoutMs,
     })) as { results: components["schemas"]["StorageTargetResponse"] };
     return response.results;
   }
