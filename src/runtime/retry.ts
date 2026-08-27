@@ -10,18 +10,24 @@ export const DEFAULT_RETRY: RetryPolicy = {
   maxMs: 8000,
 };
 
-const RETRYABLE_STATUSES: ReadonlySet<number> = new Set([408, 429, 502, 503, 504]);
+// 421 reports that this request reached a region that does not own the
+// collection. Ownership is durable and the routing directory converges, so
+// the misroute is transient; the edge replays what it can, and retrying
+// covers the requests it cannot (uncloneable bodies, unannotated routes).
+const RETRYABLE_STATUSES: ReadonlySet<number> = new Set([421, 429, 503]);
 
 export function isRetryableStatus(status: number): boolean {
   return RETRYABLE_STATUSES.has(status);
 }
 
 export function backoffMs(attempt: number, policy: RetryPolicy, retryAfterSec?: number): number {
-  if (retryAfterSec != null && Number.isFinite(retryAfterSec)) {
-    return Math.min(retryAfterSec * 1000, policy.maxMs);
-  }
   const exp = Math.min(policy.baseMs * 2 ** attempt, policy.maxMs);
-  return Math.floor(Math.random() * exp);
+  const jitter = Math.floor(Math.random() * exp);
+  if (retryAfterSec != null && Number.isFinite(retryAfterSec)) {
+    // Retry-After is a server-imposed minimum, not ordinary client backoff.
+    return Math.max(jitter, Math.max(0, retryAfterSec * 1000));
+  }
+  return jitter;
 }
 
 export function sleep(ms: number, signal?: AbortSignal): Promise<void> {
