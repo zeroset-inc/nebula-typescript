@@ -1,3 +1,8 @@
+import {
+  parsePublicApiError,
+  type PublicApiError,
+} from "./public-api-error.ts";
+
 export class NebulaError extends Error {
   override readonly name: string = "NebulaError";
   constructor(message: string, options?: { cause?: unknown }) {
@@ -61,6 +66,8 @@ export class NebulaAPIError extends NebulaError {
   readonly type?: string;
   readonly code?: string;
   readonly details?: unknown;
+  /** Validated closed public error, absent for legacy or proxy responses. */
+  readonly publicError?: PublicApiError;
 
   constructor(payload: APIErrorPayload, message?: string) {
     const envelope = isEnvelope(payload.body) ? payload.body : undefined;
@@ -86,7 +93,14 @@ export class NebulaAPIError extends NebulaError {
     this.type = envelope?.type;
     this.code = envCode;
     this.details = envelope?.details ?? undefined;
+    this.publicError = parsePublicApiError(payload.body);
   }
+}
+
+export function isNebulaPublicAPIError(
+  error: unknown,
+): error is NebulaAPIError & { readonly publicError: PublicApiError } {
+  return error instanceof NebulaAPIError && error.publicError !== undefined;
 }
 
 export class NebulaBadRequestError extends NebulaAPIError {
